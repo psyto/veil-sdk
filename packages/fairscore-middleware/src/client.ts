@@ -63,7 +63,7 @@ export class FairScoreClient {
       throw new Error(`FairScale API error: ${response.status} ${response.statusText}`);
     }
 
-    const data: FairScoreResponse = await response.json();
+    const data = (await response.json()) as FairScoreResponse;
 
     // Cache the result
     this.cache.set(walletStr, {
