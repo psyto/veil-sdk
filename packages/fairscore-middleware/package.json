@@ -22,7 +22,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/psyto/veil.git",
+    "url": "https://github.com/psyto/veil-sdk.git",
     "directory": "packages/fairscore-middleware"
   },
   "author": "Veil Contributors",

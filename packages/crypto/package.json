@@ -9,7 +9,8 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/privacy-suite/crypto.git"
+    "url": "https://github.com/psyto/veil-sdk.git",
+    "directory": "packages/crypto"
   },
   "author": "Privacy Suite Contributors",
   "license": "MIT",
