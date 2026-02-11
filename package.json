@@ -1,0 +1,17 @@
+{
+  "name": "veil-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reusable SDK primitives for Veil privacy-focused DeFi infrastructure",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "yarn workspaces run build",
+    "test": "yarn workspaces run test",
+    "clean": "yarn workspaces run clean"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

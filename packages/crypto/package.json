@@ -1,0 +1,39 @@
+{
+  "name": "@privacy-suite/crypto",
+  "version": "0.2.0",
+  "description": "Shared encryption and privacy utilities for Solana Privacy Suite with ZK compression",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/privacy-suite/crypto.git"
+  },
+  "author": "Privacy Suite Contributors",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "clean": "rm -rf dist",
+    "postinstall": "node scripts/copy-wasm.js || true"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.0",
+    "@lightprotocol/stateless.js": "^0.17.0",
+    "@lightprotocol/compressed-token": "^0.17.0",
+    "bn.js": "^5.2.1",
+    "privacycash": "^1.1.7",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.5",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@solana/web3.js": "^1.95.0"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@umbra/fairscore-middleware",
+  "version": "0.1.0",
+  "description": "FairScale FairScore integration middleware for Umbra",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.0",
+    "bs58": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/psyto/veil.git",
+    "directory": "packages/fairscore-middleware"
+  },
+  "author": "Veil Contributors",
+  "license": "MIT"
+}

@@ -1,0 +1,33 @@
+{
+  "name": "@privacy-suite/orders",
+  "version": "0.1.0",
+  "description": "Order encryption utilities for Privacy Suite — serialize, encrypt, and decrypt swap order payloads",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/psyto/veil.git",
+    "directory": "packages/orders"
+  },
+  "author": "Privacy Suite Contributors",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@privacy-suite/crypto": "file:../crypto",
+    "bn.js": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.5",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@privacy-suite/crypto": "^0.2.0"
+  }
+}
