@@ -462,18 +462,17 @@ function bigintToBytes(value: bigint): Uint8Array {
 }
 
 /**
- * Generate random bytes
+ * Generate cryptographically secure random bytes
  */
 function generateRandomBytes(length: number): Uint8Array {
-  const bytes = new Uint8Array(length);
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(bytes);
+  if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
+    const bytes = new Uint8Array(length);
+    globalThis.crypto.getRandomValues(bytes);
+    return bytes;
   } else {
-    for (let i = 0; i < length; i++) {
-      bytes[i] = Math.floor(Math.random() * 256);
-    }
+    const { randomBytes } = require('crypto');
+    return new Uint8Array(randomBytes(length));
   }
-  return bytes;
 }
 
 /**
@@ -491,27 +490,19 @@ function concatBytes(...arrays: Uint8Array[]): Uint8Array {
 }
 
 /**
- * Hash bytes (simple implementation)
+ * SHA-256 hash of byte data
  */
 function hashBytes(data: Uint8Array): Uint8Array {
-  // In production, use proper SHA-256 or Poseidon hash
-  const result = new Uint8Array(32);
-  for (let i = 0; i < data.length; i++) {
-    result[i % 32] ^= data[i];
-  }
-  // Add some mixing
-  for (let i = 0; i < 32; i++) {
-    result[i] = (result[i] * 31 + result[(i + 1) % 32]) % 256;
-  }
-  return result;
+  const { createHash } = require('crypto');
+  return new Uint8Array(createHash('sha256').update(data).digest());
 }
 
 /**
- * Hash a string to bytes
+ * SHA-256 hash of a string
  */
 function hashString(str: string): Uint8Array {
-  const encoder = new TextEncoder();
-  return hashBytes(encoder.encode(str));
+  const { createHash } = require('crypto');
+  return new Uint8Array(createHash('sha256').update(str).digest());
 }
 
 /**

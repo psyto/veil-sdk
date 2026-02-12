@@ -314,6 +314,20 @@ export async function verifyShieldedProof(
 }
 
 /**
+ * Generate cryptographically secure random bytes
+ */
+function generateSecureRandomness(length: number): Uint8Array {
+  if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
+    const bytes = new Uint8Array(length);
+    globalThis.crypto.getRandomValues(bytes);
+    return bytes;
+  } else {
+    const { randomBytes } = require('crypto');
+    return new Uint8Array(randomBytes(length));
+  }
+}
+
+/**
  * Generate a commitment for a deposit
  *
  * @param owner - Owner's public key
@@ -331,15 +345,11 @@ function generateCommitment(owner: PublicKey, amount: bigint): Uint8Array {
   const amountBytes = bigintToBytes(amount);
   data.set(amountBytes, 32);
 
-  // Add randomness
-  const randomness = new Uint8Array(16);
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(randomness);
-  }
+  // Add cryptographic randomness
+  const randomness = generateSecureRandomness(16);
   data.set(randomness, 48);
 
-  // Simple hash (in production, use proper cryptographic hash)
-  return simpleHash(data);
+  return sha256Hash(data);
 }
 
 /**
@@ -357,7 +367,7 @@ function generateNullifier(commitment: Uint8Array, secretKey: Uint8Array): Uint8
   data.set(commitment, 0);
   data.set(secretKey.slice(0, 32), commitment.length);
 
-  return simpleHash(data);
+  return sha256Hash(data);
 }
 
 /**
@@ -376,18 +386,11 @@ function bigintToBytes(value: bigint): Uint8Array {
 }
 
 /**
- * Simple hash function (placeholder - use proper crypto in production)
+ * SHA-256 hash
  */
-function simpleHash(data: Uint8Array): Uint8Array {
-  const hash = new Uint8Array(32);
-
-  for (let i = 0; i < data.length; i++) {
-    hash[i % 32] ^= data[i];
-    // Simple mixing
-    hash[(i + 1) % 32] = (hash[(i + 1) % 32] + data[i]) % 256;
-  }
-
-  return hash;
+function sha256Hash(data: Uint8Array): Uint8Array {
+  const { createHash } = require('crypto');
+  return new Uint8Array(createHash('sha256').update(data).digest());
 }
 
 /**
