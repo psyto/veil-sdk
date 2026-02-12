@@ -7,4 +7,9 @@ export {
   TierBenefits,
   FairScoreConfig,
 } from './types';
-export { verifyFairScoreProof, createProofMessage } from './verification';
+export {
+  verifyFairScoreProof,
+  createProofMessage,
+  setFairScaleSignerPubkey,
+  getFairScaleSignerPubkey,
+} from './verification';

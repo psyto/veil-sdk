@@ -422,16 +422,15 @@ function bytesToBigint(bytes: Uint8Array): bigint {
  * Generate cryptographically secure random bytes
  */
 function generateRandomness(length: number): Uint8Array {
-  const randomBytes = new Uint8Array(length);
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(randomBytes);
+  if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
+    const randomBytes = new Uint8Array(length);
+    globalThis.crypto.getRandomValues(randomBytes);
+    return randomBytes;
   } else {
-    // Fallback for Node.js
-    for (let i = 0; i < length; i++) {
-      randomBytes[i] = Math.floor(Math.random() * 256);
-    }
+    // Node.js fallback
+    const { randomBytes } = require('crypto');
+    return new Uint8Array(randomBytes(length));
   }
-  return randomBytes;
 }
 
 /**
@@ -445,14 +444,10 @@ function generateOrderId(): string {
 
 /**
  * SHA-256 hash (sync, for commitments)
- * In production, use a proper SHA-256 implementation
  */
 function sha256(data: Uint8Array): Uint8Array {
-  const result = new Uint8Array(32);
-  for (let i = 0; i < Math.min(data.length, 32); i++) {
-    result[i] = data[i];
-  }
-  return result;
+  const { createHash } = require('crypto');
+  return new Uint8Array(createHash('sha256').update(data).digest());
 }
 
 // ============================================================================

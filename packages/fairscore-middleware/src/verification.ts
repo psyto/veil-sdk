@@ -1,13 +1,27 @@
 import { PublicKey } from '@solana/web3.js';
+import nacl from 'tweetnacl';
 import { FairScoreProof } from './types';
 
 /**
- * FairScale's public key for signature verification
- * This would be the actual FairScale signing key in production
+ * FairScale signer configuration.
+ * Set the actual FairScale Ed25519 public key before using signature verification.
  */
-export const FAIRSCALE_SIGNER_PUBKEY = new PublicKey(
-  'FAirSca1eXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' // Placeholder - replace with actual
-);
+let fairscaleSignerPubkey: PublicKey | null = null;
+
+/**
+ * Configure the FairScale signer public key for Ed25519 signature verification.
+ * Must be called before proofs with signatures can be verified.
+ */
+export function setFairScaleSignerPubkey(pubkey: PublicKey | string): void {
+  fairscaleSignerPubkey = typeof pubkey === 'string' ? new PublicKey(pubkey) : pubkey;
+}
+
+/**
+ * Get the currently configured FairScale signer public key, or null if not set.
+ */
+export function getFairScaleSignerPubkey(): PublicKey | null {
+  return fairscaleSignerPubkey;
+}
 
 /**
  * Maximum age of a FairScore proof in milliseconds (10 minutes)
@@ -108,11 +122,23 @@ export function verifyFairScoreProof(
     };
   }
 
-  // In production, verify Ed25519 signature here
-  // For hackathon, we trust the API response signature
+  // Verify Ed25519 signature
   if (proof.signature.length === 0) {
-    // Allow empty signature for development/testing
-    console.warn('Warning: FairScore proof has empty signature');
+    console.warn('Warning: FairScore proof has empty signature — skipping signature check');
+  } else if (!fairscaleSignerPubkey) {
+    console.warn('Warning: FairScale signer pubkey not configured — skipping signature check. Call setFairScaleSignerPubkey() to enable.');
+  } else {
+    const valid = nacl.sign.detached.verify(
+      proof.message,
+      proof.signature,
+      fairscaleSignerPubkey.toBytes()
+    );
+    if (!valid) {
+      return {
+        valid: false,
+        error: 'Ed25519 signature verification failed',
+      };
+    }
   }
 
   return { valid: true };
