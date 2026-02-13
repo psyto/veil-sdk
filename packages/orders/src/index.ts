@@ -41,7 +41,7 @@ export interface EncryptedPayload {
  */
 export function serializeOrderPayload(payload: OrderPayload): Uint8Array {
   return serializePayload({
-    minOutputAmount: payload.minOutputAmount.toArrayLike(Buffer, 'le', 8),
+    minOutputAmount: payload.minOutputAmount,
     slippageBps: payload.slippageBps,
     deadline: payload.deadline,
     padding: new Uint8Array(6),
