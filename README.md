@@ -9,6 +9,7 @@ Reusable SDK primitives for [Veil](https://github.com/psyto/veil) privacy-focuse
 | [`@privacy-suite/crypto`](#privacy-suitecrypto) | Encryption, secret sharing, ZK compression, shielded transfers, Arcium MPC, Noir proofs |
 | [`@privacy-suite/orders`](#privacy-suiteorders) | Encrypt and decrypt swap order payloads for MEV protection |
 | [`@umbra/fairscore-middleware`](#umbrafairscore-middleware) | Reputation-based fee tiers and access control via FairScale |
+| [`@privacy-suite/qn-addon`](#privacy-suiteqn-addon) | QuickNode Marketplace REST Add-On wrapping Veil privacy primitives |
 
 ## Getting Started
 
@@ -685,6 +686,195 @@ interface TierBenefits {
 
 ---
 
+## `@privacy-suite/qn-addon`
+
+QuickNode Marketplace REST Add-On that wraps all Veil privacy primitives as a JSON API. Install it on any QuickNode Solana endpoint to access NaCl encryption, Shamir secret sharing, order encryption, ZK compression estimation, and reputation tiers over HTTP.
+
+### Running
+
+```bash
+# From the monorepo root
+yarn install && yarn build
+
+# Start the add-on server (default port 3030)
+cd packages/qn-addon
+yarn dev
+```
+
+```bash
+# Health check
+curl http://localhost:3030/healthcheck
+# {"status":"ok"}
+```
+
+### QuickNode PUDD Lifecycle
+
+The add-on implements the four mandatory QuickNode Marketplace provisioning endpoints, all protected by HTTP Basic Auth:
+
+| Method | Path | Action |
+|--------|------|--------|
+| POST | `/provision` | Store new endpoint (quicknode-id, endpoint-id, plan, http-url, chain, network) |
+| PUT | `/update` | Update an existing endpoint |
+| DELETE | `/deactivate_endpoint` | Soft-deactivate (set active=0) |
+| DELETE | `/deprovision` | Hard-delete all instances for an account |
+
+```bash
+# Provision an endpoint
+curl -X POST http://localhost:3030/provision \
+  -u quicknode:changeme \
+  -H "Content-Type: application/json" \
+  -d '{"quicknode-id":"qn-1","endpoint-id":"ep-1","plan":"starter","http-url":"https://example.solana-mainnet.quiknode.pro/abc","chain":"solana","network":"mainnet-beta"}'
+# {"status":"success"}
+```
+
+### REST API Endpoints
+
+All binary data in JSON uses **base64** encoding. Key material responses include both `base64` and `hex` fields.
+
+#### Crypto (NaCl Box)
+
+```bash
+# Generate a keypair
+curl -X POST http://localhost:3030/v1/keypair/generate
+# {"success":true,"publicKey":{"base64":"...","hex":"..."},"secretKey":{"base64":"...","hex":"..."}}
+
+# Derive a keypair from a seed
+curl -X POST http://localhost:3030/v1/keypair/derive \
+  -H "Content-Type: application/json" \
+  -d '{"seed":"<base64-encoded-32-bytes>"}'
+
+# Encrypt
+curl -X POST http://localhost:3030/v1/encrypt \
+  -H "Content-Type: application/json" \
+  -d '{"plaintext":"<base64>","recipientPublicKey":"<base64>","senderSecretKey":"<base64>","senderPublicKey":"<base64>"}'
+
+# Decrypt
+curl -X POST http://localhost:3030/v1/decrypt \
+  -H "Content-Type: application/json" \
+  -d '{"bytes":"<base64>","senderPublicKey":"<base64>","recipientSecretKey":"<base64>","recipientPublicKey":"<base64>"}'
+```
+
+#### Threshold (Shamir Secret Sharing)
+
+```bash
+# Split a 32-byte secret into shares
+curl -X POST http://localhost:3030/v1/threshold/split \
+  -H "Content-Type: application/json" \
+  -d '{"secret":"<base64-32-bytes>","threshold":3,"totalShares":5}'
+
+# Combine shares to recover the secret
+curl -X POST http://localhost:3030/v1/threshold/combine \
+  -H "Content-Type: application/json" \
+  -d '{"shares":[{"index":1,"value":"<base64>"},{"index":3,"value":"<base64>"},{"index":5,"value":"<base64>"}]}'
+```
+
+#### Orders (Encrypted Swap Orders)
+
+```bash
+# Encrypt an order payload
+curl -X POST http://localhost:3030/v1/orders/encrypt \
+  -H "Content-Type: application/json" \
+  -d '{"minOutputAmount":"1000000","slippageBps":50,"deadline":1700000000,"solverPublicKey":"<base64>","userSecretKey":"<base64>","userPublicKey":"<base64>"}'
+
+# Decrypt an order payload
+curl -X POST http://localhost:3030/v1/orders/decrypt \
+  -H "Content-Type: application/json" \
+  -d '{"bytes":"<base64>","userPublicKey":"<base64>","solverSecretKey":"<base64>","solverPublicKey":"<base64>"}'
+```
+
+#### Payload Serialization
+
+```bash
+# Serialize structured data (schemas: SWAP_ORDER, RWA_ASSET, RWA_ACCESS_GRANT)
+curl -X POST http://localhost:3030/v1/payload/serialize \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"minOutputAmount":"5000000","slippageBps":100,"deadline":1700000000,"padding":"AAAAAAAA"},"schema":"SWAP_ORDER"}'
+
+# Deserialize bytes back to structured data
+curl -X POST http://localhost:3030/v1/payload/deserialize \
+  -H "Content-Type: application/json" \
+  -d '{"bytes":"<base64>","schema":"SWAP_ORDER"}'
+```
+
+#### Compression (ZK)
+
+```bash
+# Estimate compression savings (stateless, no RPC needed)
+curl "http://localhost:3030/v1/compression/estimate?size=4096"
+# {"success":true,"dataSize":4096,"uncompressedCost":"...","compressedCost":"...","savings":"...","savingsPercent":...}
+
+# Compress data (requires provisioned endpoint with http-url)
+# Header X-INSTANCE-ID must match a provisioned endpoint
+curl -X POST http://localhost:3030/v1/compression/compress \
+  -H "Content-Type: application/json" \
+  -H "X-INSTANCE-ID: ep-1" \
+  -d '{"data":"<base64>","payerSecretKey":"<base64>"}'
+
+# Decompress data
+curl -X POST http://localhost:3030/v1/compression/decompress \
+  -H "Content-Type: application/json" \
+  -H "X-INSTANCE-ID: ep-1" \
+  -d '{"compressedData":"<base64>","proof":"<base64>","publicInputs":"<base64>","stateTreeRoot":"<base64>","dataHash":"<base64>"}'
+```
+
+#### Tiers (Reputation)
+
+```bash
+# Look up tier benefits for a FairScore value (0-100)
+curl http://localhost:3030/v1/tiers/72
+# {"success":true,"score":72,"tier":3,"tierName":"Gold","feeBps":8,"mevProtection":3,"orderTypes":["market","limit","twap","iceberg"],...}
+```
+
+### Configuration
+
+Copy `.env.example` and edit:
+
+```bash
+PORT=3030                          # Server port
+QN_BASIC_AUTH_USERNAME=quicknode   # Basic Auth for PUDD endpoints
+QN_BASIC_AUTH_PASSWORD=changeme
+DB_PATH=./data/qn-addon.db        # SQLite database path
+```
+
+### Testing
+
+```bash
+cd packages/qn-addon
+
+# Run all tests (33 tests across 14 suites)
+yarn test
+
+# End-to-end curl test (server must be running)
+./scripts/test-qn-cli.sh
+```
+
+### API Endpoint Summary
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | `/healthcheck` | Health check | None |
+| GET | `/` | Add-on info and endpoint listing | None |
+| POST | `/provision` | Provision endpoint | Basic |
+| PUT | `/update` | Update endpoint | Basic |
+| DELETE | `/deactivate_endpoint` | Soft-deactivate | Basic |
+| DELETE | `/deprovision` | Hard-delete account | Basic |
+| POST | `/v1/keypair/generate` | Generate NaCl keypair | None |
+| POST | `/v1/keypair/derive` | Derive keypair from seed | None |
+| POST | `/v1/encrypt` | NaCl box encrypt | None |
+| POST | `/v1/decrypt` | NaCl box decrypt | None |
+| POST | `/v1/threshold/split` | Shamir split secret | None |
+| POST | `/v1/threshold/combine` | Shamir combine shares | None |
+| POST | `/v1/orders/encrypt` | Encrypt swap order | None |
+| POST | `/v1/orders/decrypt` | Decrypt swap order | None |
+| POST | `/v1/payload/serialize` | Serialize structured data | None |
+| POST | `/v1/payload/deserialize` | Deserialize structured data | None |
+| GET | `/v1/compression/estimate` | Estimate ZK compression savings | None |
+| POST | `/v1/compression/compress` | Compress data via Light Protocol | X-INSTANCE-ID |
+| POST | `/v1/compression/decompress` | Decompress data via Light Protocol | X-INSTANCE-ID |
+| GET | `/v1/tiers/:score` | Look up tier benefits | None |
+
+---
+
 ## Dependencies
 
 | Package | Key Dependencies |
@@ -692,6 +882,7 @@ interface TierBenefits {
 | `@privacy-suite/crypto` | `@solana/web3.js`, `tweetnacl`, `@lightprotocol/stateless.js`, `@lightprotocol/compressed-token`, `privacycash`, `bn.js` |
 | `@privacy-suite/orders` | `@privacy-suite/crypto`, `bn.js` |
 | `@umbra/fairscore-middleware` | `@solana/web3.js`, `bs58` |
+| `@privacy-suite/qn-addon` | `@privacy-suite/crypto`, `@privacy-suite/orders`, `@umbra/fairscore-middleware`, `express`, `better-sqlite3`, `bn.js` |
 
 ## License
 
