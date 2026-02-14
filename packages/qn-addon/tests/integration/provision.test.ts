@@ -31,12 +31,13 @@ describe('PUDD lifecycle', () => {
     expect(provision.status).toBe(200);
     expect(provision.body.status).toBe('success');
 
-    // Duplicate provision fails
+    // Duplicate provision is idempotent (succeeds)
     const dup = await request(app)
       .post('/provision')
       .set('Authorization', AUTH_HEADER)
       .send({ 'quicknode-id': 'qn-1', 'endpoint-id': 'ep-1', plan: 'starter' });
-    expect(dup.status).toBe(409);
+    expect(dup.status).toBe(200);
+    expect(dup.body.status).toBe('success');
 
     // Update
     const update = await request(app)

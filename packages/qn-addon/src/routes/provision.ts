@@ -24,19 +24,25 @@ router.post('/provision', basicAuth, (req: Request, res: Response) => {
 
     const existing = getInstanceByEndpointId(endpointId);
     if (existing) {
-      res.status(409).json({ status: 'error', message: 'Endpoint already provisioned' });
-      return;
+      // Idempotent: update the existing instance instead of rejecting
+      updateInstance(endpointId, {
+        plan: body.plan,
+        wss_url: body['wss-url'],
+        http_url: body['http-url'],
+        chain: body.chain,
+        network: body.network,
+      });
+    } else {
+      createInstance({
+        quicknode_id: quicknodeId,
+        endpoint_id: endpointId,
+        plan: body.plan,
+        wss_url: body['wss-url'],
+        http_url: body['http-url'],
+        chain: body.chain,
+        network: body.network,
+      });
     }
-
-    createInstance({
-      quicknode_id: quicknodeId,
-      endpoint_id: endpointId,
-      plan: body.plan,
-      wss_url: body['wss-url'],
-      http_url: body['http-url'],
-      chain: body.chain,
-      network: body.network,
-    });
 
     res.json({ status: 'success' });
   } catch (error: any) {

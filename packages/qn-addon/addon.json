@@ -1,0 +1,148 @@
+{
+  "name": "Veil Privacy Suite",
+  "slug": "veil-privacy-suite",
+  "version": "0.1.0",
+  "description": "Privacy primitives for Solana DeFi — NaCl encryption, Shamir secret sharing, encrypted order payloads, ZK compression, and reputation-based fee tiers. Built on the Veil SDK.",
+  "type": "rest",
+  "author": "Veil",
+  "repository": "https://github.com/psyto/veil-sdk",
+  "healthcheck": "/healthcheck",
+  "authentication": "basic",
+  "chains": [
+    {
+      "chain": "solana",
+      "networks": ["mainnet-beta", "devnet", "testnet"]
+    }
+  ],
+  "plans": [
+    {
+      "slug": "starter",
+      "name": "Starter",
+      "description": "Stateless privacy primitives: encryption, secret sharing, payload serialization, tier lookup, compression estimation.",
+      "price": "free",
+      "features": [
+        "NaCl box encryption/decryption",
+        "Keypair generation and derivation",
+        "Shamir secret sharing (split/combine)",
+        "Encrypted order payloads",
+        "Payload serialization (SWAP_ORDER, RWA_ASSET, RWA_ACCESS_GRANT)",
+        "ZK compression cost estimation",
+        "Reputation tier lookup"
+      ],
+      "rate_limit": "100 requests/minute"
+    },
+    {
+      "slug": "pro",
+      "name": "Pro",
+      "description": "All Starter features plus RPC-dependent ZK compression via Light Protocol.",
+      "price": "TBD",
+      "features": [
+        "Everything in Starter",
+        "ZK data compression via Light Protocol",
+        "ZK data decompression",
+        "Uses provisioned QuickNode endpoint for RPC calls"
+      ],
+      "rate_limit": "500 requests/minute"
+    }
+  ],
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/v1/keypair/generate",
+      "description": "Generate a random NaCl X25519 encryption keypair",
+      "sample_url": "https://your-addon.example.com/v1/keypair/generate",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/keypair/derive",
+      "description": "Derive a deterministic encryption keypair from a 32-byte seed",
+      "sample_url": "https://your-addon.example.com/v1/keypair/derive",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/encrypt",
+      "description": "Encrypt plaintext using NaCl box (Curve25519-XSalsa20-Poly1305)",
+      "sample_url": "https://your-addon.example.com/v1/encrypt",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/decrypt",
+      "description": "Decrypt NaCl box ciphertext back to plaintext",
+      "sample_url": "https://your-addon.example.com/v1/decrypt",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/threshold/split",
+      "description": "Split a 32-byte secret into M-of-N Shamir shares",
+      "sample_url": "https://your-addon.example.com/v1/threshold/split",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/threshold/combine",
+      "description": "Combine Shamir shares to recover the original secret",
+      "sample_url": "https://your-addon.example.com/v1/threshold/combine",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/orders/encrypt",
+      "description": "Encrypt a swap order payload for MEV-protected submission",
+      "sample_url": "https://your-addon.example.com/v1/orders/encrypt",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/orders/decrypt",
+      "description": "Decrypt an encrypted swap order payload",
+      "sample_url": "https://your-addon.example.com/v1/orders/decrypt",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/payload/serialize",
+      "description": "Serialize structured data to binary using a named or custom schema",
+      "sample_url": "https://your-addon.example.com/v1/payload/serialize",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/payload/deserialize",
+      "description": "Deserialize binary data back to structured fields",
+      "sample_url": "https://your-addon.example.com/v1/payload/deserialize",
+      "plan": "starter"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/compression/estimate",
+      "description": "Estimate ZK compression cost savings for a given data size",
+      "sample_url": "https://your-addon.example.com/v1/compression/estimate?size=4096",
+      "plan": "starter"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/tiers/:score",
+      "description": "Look up reputation tier benefits for a FairScore value (0-100)",
+      "sample_url": "https://your-addon.example.com/v1/tiers/72",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/compression/compress",
+      "description": "Compress data on-chain via Light Protocol ZK compression",
+      "sample_url": "https://your-addon.example.com/v1/compression/compress",
+      "plan": "pro"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/compression/decompress",
+      "description": "Decompress Light Protocol ZK-compressed data",
+      "sample_url": "https://your-addon.example.com/v1/compression/decompress",
+      "plan": "pro"
+    }
+  ]
+}

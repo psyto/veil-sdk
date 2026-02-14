@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 import healthcheckRouter from './routes/healthcheck';
 import provisionRouter from './routes/provision';
 import cryptoRouter from './routes/crypto';
@@ -9,12 +10,18 @@ import payloadRouter from './routes/payload';
 import compressionRouter from './routes/compression';
 import tiersRouter from './routes/tiers';
 import { errorHandler } from './middleware/error-handler';
+import { apiLimiter, provisionLimiter } from './middleware/rate-limit';
 
 export function createApp(): express.Application {
   const app = express();
 
   app.use(cors());
   app.use(express.json({ limit: '1mb' }));
+
+  // Request logging (skip in test environment)
+  if (process.env.NODE_ENV !== 'test') {
+    app.use(morgan('short'));
+  }
 
   // Root info endpoint
   app.get('/', (_req, res) => {
@@ -57,13 +64,14 @@ export function createApp(): express.Application {
     });
   });
 
-  // Public endpoints (no auth)
+  // Public endpoints (no auth, no rate limit)
   app.use(healthcheckRouter);
 
   // PUDD provisioning (Basic Auth — handled inside router)
-  app.use(provisionRouter);
+  app.use(provisionLimiter, provisionRouter);
 
-  // API endpoints (instance lookup applied inside routes that need it)
+  // API endpoints with rate limiting (instance lookup applied inside routes that need it)
+  app.use(apiLimiter);
   app.use(cryptoRouter);
   app.use(thresholdRouter);
   app.use(ordersRouter);
