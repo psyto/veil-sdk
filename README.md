@@ -713,7 +713,7 @@ The add-on implements the four mandatory QuickNode Marketplace provisioning endp
 
 | Method | Path | Action |
 |--------|------|--------|
-| POST | `/provision` | Store new endpoint (quicknode-id, endpoint-id, plan, http-url, chain, network) |
+| POST | `/provision` | Store or update endpoint (idempotent — quicknode-id, endpoint-id, plan, http-url, chain, network) |
 | PUT | `/update` | Update an existing endpoint |
 | DELETE | `/deactivate_endpoint` | Soft-deactivate (set active=0) |
 | DELETE | `/deprovision` | Hard-delete all instances for an account |
@@ -836,6 +836,30 @@ QN_BASIC_AUTH_PASSWORD=changeme
 DB_PATH=./data/qn-addon.db        # SQLite database path
 ```
 
+### Rate Limiting
+
+API endpoints are rate-limited by default:
+
+| Scope | Limit |
+|-------|-------|
+| API endpoints (`/v1/*`) | 100 requests/minute per IP |
+| Provisioning (`/provision`, `/update`, etc.) | 20 requests/minute per IP |
+| Health check (`/healthcheck`) | No limit |
+
+Rate limit headers (`RateLimit-*`) are included in responses per the IETF draft standard.
+
+### Docker
+
+Build and run from the monorepo root:
+
+```bash
+docker build -f packages/qn-addon/Dockerfile -t veil-qn-addon .
+docker run -p 3030:3030 \
+  -e QN_BASIC_AUTH_USERNAME=quicknode \
+  -e QN_BASIC_AUTH_PASSWORD=your-secret \
+  veil-qn-addon
+```
+
 ### Testing
 
 ```bash
@@ -846,7 +870,23 @@ yarn test
 
 # End-to-end curl test (server must be running)
 ./scripts/test-qn-cli.sh
+
+# Validate with QuickNode's official CLI (requires Go)
+go install github.com/quiknode-labs/qn-marketplace-cli@latest
+qn-marketplace-cli pudd \
+  --base-url http://localhost:3030 \
+  --basic-auth "$(echo -n 'quicknode:changeme' | base64)" \
+  --chain solana --network mainnet-beta --plan starter
+
+# Tier 2 RPC test (requires real QuickNode Solana devnet endpoint)
+export QN_HTTP_URL="https://your-endpoint.quiknode.pro/..."
+export PAYER_SECRET_KEY="<base64-encoded-solana-keypair>"
+./scripts/test-tier2-rpc.sh
 ```
+
+### CI
+
+GitHub Actions runs `yarn build` and `yarn test` on every push and PR to `main`, tested against Node 18 and 20.
 
 ### API Endpoint Summary
 
@@ -882,7 +922,7 @@ yarn test
 | `@privacy-suite/crypto` | `@solana/web3.js`, `tweetnacl`, `@lightprotocol/stateless.js`, `@lightprotocol/compressed-token`, `privacycash`, `bn.js` |
 | `@privacy-suite/orders` | `@privacy-suite/crypto`, `bn.js` |
 | `@umbra/fairscore-middleware` | `@solana/web3.js`, `bs58` |
-| `@privacy-suite/qn-addon` | `@privacy-suite/crypto`, `@privacy-suite/orders`, `@umbra/fairscore-middleware`, `express`, `better-sqlite3`, `bn.js` |
+| `@privacy-suite/qn-addon` | `@privacy-suite/crypto`, `@privacy-suite/orders`, `@umbra/fairscore-middleware`, `express`, `better-sqlite3`, `morgan`, `express-rate-limit`, `bn.js` |
 
 ## License
 
