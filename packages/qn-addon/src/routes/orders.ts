@@ -81,4 +81,22 @@ router.post('/v1/orders/decrypt', (req: Request, res: Response) => {
   }
 });
 
+router.post('/v1/orders/validate', (req: Request, res: Response) => {
+  try {
+    const { bytes } = req.body;
+
+    if (!bytes || typeof bytes !== 'string') {
+      res.status(400).json({ success: false, error: 'bytes is required (base64 string of encrypted order)' });
+      return;
+    }
+
+    const bytesArray = new Uint8Array(Buffer.from(bytes, 'base64'));
+    const valid = ordersService.validateOrder(bytesArray);
+
+    res.json({ success: true, valid, byteLength: bytesArray.length });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

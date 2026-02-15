@@ -1,4 +1,4 @@
-import { splitSecret, combineShares, SecretShare } from '@privacy-suite/crypto';
+import { splitSecret, combineShares, verifyShares, SecretShare } from '@privacy-suite/crypto';
 
 export function split(secret: Uint8Array, threshold: number, totalShares: number): SecretShare[] {
   return splitSecret(secret, threshold, totalShares);
@@ -6,4 +6,8 @@ export function split(secret: Uint8Array, threshold: number, totalShares: number
 
 export function combine(shares: SecretShare[]): Uint8Array {
   return combineShares(shares);
+}
+
+export function verify(shares: SecretShare[], expectedThreshold: number): boolean {
+  return verifyShares(shares, expectedThreshold);
 }

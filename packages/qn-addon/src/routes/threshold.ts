@@ -66,4 +66,29 @@ router.post('/v1/threshold/combine', (req: Request, res: Response) => {
   }
 });
 
+router.post('/v1/threshold/verify', (req: Request, res: Response) => {
+  try {
+    const { shares, threshold } = req.body;
+
+    if (!Array.isArray(shares) || shares.length < 2) {
+      res.status(400).json({ success: false, error: 'shares must be an array with at least 2 elements' });
+      return;
+    }
+    if (typeof threshold !== 'number' || threshold < 2) {
+      res.status(400).json({ success: false, error: 'threshold must be a number >= 2' });
+      return;
+    }
+
+    const parsedShares = shares.map((s: { index: number; value: string }) => ({
+      index: s.index,
+      value: new Uint8Array(Buffer.from(s.value, 'base64')),
+    }));
+
+    const valid = thresholdService.verify(parsedShares, threshold);
+    res.json({ success: true, valid, sharesProvided: shares.length, threshold });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

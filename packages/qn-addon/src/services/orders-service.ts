@@ -1,6 +1,7 @@
 import {
   encryptOrderPayload,
   decryptOrderPayload,
+  validateEncryptedPayload,
   OrderPayload,
   EncryptedPayload,
 } from '@privacy-suite/orders';
@@ -31,4 +32,8 @@ export function decryptOrder(
     slippageBps: payload.slippageBps,
     deadline: payload.deadline,
   };
+}
+
+export function validateOrder(encryptedBytes: Uint8Array): boolean {
+  return validateEncryptedPayload(encryptedBytes);
 }

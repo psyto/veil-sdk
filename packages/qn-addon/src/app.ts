@@ -39,14 +39,19 @@ export function createApp(): express.Application {
           'POST /v1/keypair/derive',
           'POST /v1/encrypt',
           'POST /v1/decrypt',
+          'POST /v1/crypto/encrypt-multiple',
+          'POST /v1/crypto/validate',
+          'POST /v1/crypto/key-convert',
         ],
         threshold: [
           'POST /v1/threshold/split',
           'POST /v1/threshold/combine',
+          'POST /v1/threshold/verify',
         ],
         orders: [
           'POST /v1/orders/encrypt',
           'POST /v1/orders/decrypt',
+          'POST /v1/orders/validate',
         ],
         payload: [
           'POST /v1/payload/serialize',
