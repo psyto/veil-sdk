@@ -247,7 +247,7 @@ const TOOLS = [
 
 type Args = Record<string, unknown>;
 
-function handleTool(name: string, args: Args) {
+export function handleTool(name: string, args: Args) {
   switch (name) {
     case "generate_keypair": {
       const kp = generateEncryptionKeypair();
