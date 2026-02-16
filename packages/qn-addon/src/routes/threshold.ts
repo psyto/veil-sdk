@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import * as thresholdService from '../services/threshold-service';
+import { decodeBase64 } from '../utils/validation';
 
 const router = Router();
 
@@ -20,7 +21,11 @@ router.post('/v1/threshold/split', (req: Request, res: Response) => {
       return;
     }
 
-    const secretBytes = new Uint8Array(Buffer.from(secret, 'base64'));
+    const secretBytes = decodeBase64(secret);
+    if (!secretBytes) {
+      res.status(400).json({ success: false, error: 'secret must be valid base64' });
+      return;
+    }
     if (secretBytes.length !== 32) {
       res.status(400).json({ success: false, error: 'secret must be exactly 32 bytes' });
       return;
@@ -48,10 +53,19 @@ router.post('/v1/threshold/combine', (req: Request, res: Response) => {
       return;
     }
 
-    const parsedShares = shares.map((s: { index: number; value: string }) => ({
-      index: s.index,
-      value: new Uint8Array(Buffer.from(s.value, 'base64')),
-    }));
+    const parsedShares = [];
+    for (const s of shares) {
+      if (typeof s.index !== 'number' || !s.value || typeof s.value !== 'string') {
+        res.status(400).json({ success: false, error: 'Each share must have numeric index and base64 value' });
+        return;
+      }
+      const valueBytes = decodeBase64(s.value);
+      if (!valueBytes) {
+        res.status(400).json({ success: false, error: 'Share value must be valid base64' });
+        return;
+      }
+      parsedShares.push({ index: s.index, value: valueBytes });
+    }
 
     const secret = thresholdService.combine(parsedShares);
     res.json({
@@ -79,10 +93,19 @@ router.post('/v1/threshold/verify', (req: Request, res: Response) => {
       return;
     }
 
-    const parsedShares = shares.map((s: { index: number; value: string }) => ({
-      index: s.index,
-      value: new Uint8Array(Buffer.from(s.value, 'base64')),
-    }));
+    const parsedShares = [];
+    for (const s of shares) {
+      if (typeof s.index !== 'number' || !s.value || typeof s.value !== 'string') {
+        res.status(400).json({ success: false, error: 'Each share must have numeric index and base64 value' });
+        return;
+      }
+      const valueBytes = decodeBase64(s.value);
+      if (!valueBytes) {
+        res.status(400).json({ success: false, error: 'Share value must be valid base64' });
+        return;
+      }
+      parsedShares.push({ index: s.index, value: valueBytes });
+    }
 
     const valid = thresholdService.verify(parsedShares, threshold);
     res.json({ success: true, valid, sharesProvided: shares.length, threshold });

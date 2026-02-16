@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import * as compressionService from '../services/compression-service';
 import { instanceLookup } from '../middleware/instance-lookup';
+import { decodeBase64 } from '../utils/validation';
 
 const router = Router();
 
@@ -39,17 +40,21 @@ router.post('/v1/compression/compress', instanceLookup, async (req: Request, res
       return;
     }
 
+    const dataBytes = decodeBase64(data);
+    const payerSkBytes = decodeBase64(payerSecretKey);
+
+    if (!dataBytes || !payerSkBytes) {
+      res.status(400).json({ success: false, error: 'data and payerSecretKey must be valid base64' });
+      return;
+    }
+
     const httpUrl = req.instance?.http_url;
     if (!httpUrl) {
       res.status(400).json({ success: false, error: 'No RPC URL configured for this instance. Provision with http-url.' });
       return;
     }
 
-    const result = await compressionService.compress(
-      httpUrl,
-      new Uint8Array(Buffer.from(data, 'base64')),
-      new Uint8Array(Buffer.from(payerSecretKey, 'base64')),
-    );
+    const result = await compressionService.compress(httpUrl, dataBytes, payerSkBytes);
 
     res.json({
       success: true,
@@ -76,6 +81,17 @@ router.post('/v1/compression/decompress', instanceLookup, async (req: Request, r
       return;
     }
 
+    const compressedDataBytes = decodeBase64(compressedData);
+    const proofBytes = decodeBase64(proof);
+    const publicInputsBytes = decodeBase64(publicInputs);
+    const stateTreeRootBytes = decodeBase64(stateTreeRoot);
+    const dataHashBytes = decodeBase64(dataHash);
+
+    if (!compressedDataBytes || !proofBytes || !publicInputsBytes || !stateTreeRootBytes || !dataHashBytes) {
+      res.status(400).json({ success: false, error: 'All fields must be valid base64' });
+      return;
+    }
+
     const httpUrl = req.instance?.http_url;
     if (!httpUrl) {
       res.status(400).json({ success: false, error: 'No RPC URL configured for this instance. Provision with http-url.' });
@@ -83,11 +99,11 @@ router.post('/v1/compression/decompress', instanceLookup, async (req: Request, r
     }
 
     const result = await compressionService.decompress(httpUrl, {
-      compressedData: new Uint8Array(Buffer.from(compressedData, 'base64')),
-      proof: new Uint8Array(Buffer.from(proof, 'base64')),
-      publicInputs: new Uint8Array(Buffer.from(publicInputs, 'base64')),
-      stateTreeRoot: new Uint8Array(Buffer.from(stateTreeRoot, 'base64')),
-      dataHash: new Uint8Array(Buffer.from(dataHash, 'base64')),
+      compressedData: compressedDataBytes,
+      proof: proofBytes,
+      publicInputs: publicInputsBytes,
+      stateTreeRoot: stateTreeRootBytes,
+      dataHash: dataHashBytes,
     });
 
     res.json({

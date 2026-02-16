@@ -41,10 +41,23 @@ COPY --from=builder /app/packages/orders/dist packages/orders/dist
 COPY --from=builder /app/packages/fairscore-middleware/dist packages/fairscore-middleware/dist
 COPY --from=builder /app/packages/qn-addon/dist packages/qn-addon/dist
 
+# Create non-root user and data directory
+RUN addgroup -S app && adduser -S app -G app && \
+    mkdir -p /app/data && chown -R app:app /app/data
+
 ENV NODE_ENV=production
 ENV PORT=3030
 ENV DB_PATH=/app/data/qn-addon.db
 
+# Persistent volume for SQLite database
+VOLUME /app/data
+
 EXPOSE 3030
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3030/healthcheck || exit 1
+
+# Run as non-root user
+USER app
 
 CMD ["node", "packages/qn-addon/dist/index.js"]

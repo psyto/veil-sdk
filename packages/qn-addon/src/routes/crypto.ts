@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import * as cryptoService from '../services/crypto-service';
+import { decodeBase64 } from '../utils/validation';
 
 const router = Router();
 
@@ -30,7 +31,16 @@ router.post('/v1/keypair/derive', (req: Request, res: Response) => {
       return;
     }
 
-    const seedBytes = new Uint8Array(Buffer.from(seed, 'base64'));
+    const seedBytes = decodeBase64(seed);
+    if (!seedBytes) {
+      res.status(400).json({ success: false, error: 'seed must be valid base64' });
+      return;
+    }
+    if (seedBytes.length !== 32) {
+      res.status(400).json({ success: false, error: 'seed must be exactly 32 bytes' });
+      return;
+    }
+
     const kp = cryptoService.derive(seedBytes);
     res.json({
       success: true,
@@ -60,13 +70,20 @@ router.post('/v1/encrypt', (req: Request, res: Response) => {
       return;
     }
 
+    const plaintextBytes = decodeBase64(plaintext);
+    const recipientPk = decodeBase64(recipientPublicKey);
+    const senderSk = decodeBase64(senderSecretKey);
+    const senderPk = decodeBase64(senderPublicKey);
+
+    if (!plaintextBytes || !recipientPk || !senderSk || !senderPk) {
+      res.status(400).json({ success: false, error: 'All fields must be valid base64' });
+      return;
+    }
+
     const result = cryptoService.encryptData(
-      new Uint8Array(Buffer.from(plaintext, 'base64')),
-      new Uint8Array(Buffer.from(recipientPublicKey, 'base64')),
-      {
-        publicKey: new Uint8Array(Buffer.from(senderPublicKey, 'base64')),
-        secretKey: new Uint8Array(Buffer.from(senderSecretKey, 'base64')),
-      },
+      plaintextBytes,
+      recipientPk,
+      { publicKey: senderPk, secretKey: senderSk },
     );
 
     res.json({
@@ -101,13 +118,20 @@ router.post('/v1/decrypt', (req: Request, res: Response) => {
       return;
     }
 
+    const bytesArr = decodeBase64(bytes);
+    const senderPk = decodeBase64(senderPublicKey);
+    const recipientSk = decodeBase64(recipientSecretKey);
+    const recipientPk = decodeBase64(recipientPublicKey);
+
+    if (!bytesArr || !senderPk || !recipientSk || !recipientPk) {
+      res.status(400).json({ success: false, error: 'All fields must be valid base64' });
+      return;
+    }
+
     const result = cryptoService.decryptData(
-      new Uint8Array(Buffer.from(bytes, 'base64')),
-      new Uint8Array(Buffer.from(senderPublicKey, 'base64')),
-      {
-        publicKey: new Uint8Array(Buffer.from(recipientPublicKey, 'base64')),
-        secretKey: new Uint8Array(Buffer.from(recipientSecretKey, 'base64')),
-      },
+      bytesArr,
+      senderPk,
+      { publicKey: recipientPk, secretKey: recipientSk },
     );
 
     res.json({
@@ -141,17 +165,29 @@ router.post('/v1/crypto/encrypt-multiple', (req: Request, res: Response) => {
       return;
     }
 
-    const recipientKeys = recipientPublicKeys.map(
-      (k: string) => new Uint8Array(Buffer.from(k, 'base64'))
-    );
+    const plaintextBytes = decodeBase64(plaintext);
+    const senderSk = decodeBase64(senderSecretKey);
+    const senderPk = decodeBase64(senderPublicKey);
+
+    if (!plaintextBytes || !senderSk || !senderPk) {
+      res.status(400).json({ success: false, error: 'plaintext, senderSecretKey, senderPublicKey must be valid base64' });
+      return;
+    }
+
+    const recipientKeys: Uint8Array[] = [];
+    for (const k of recipientPublicKeys) {
+      const decoded = decodeBase64(k);
+      if (!decoded) {
+        res.status(400).json({ success: false, error: 'All recipientPublicKeys must be valid base64' });
+        return;
+      }
+      recipientKeys.push(decoded);
+    }
 
     const results = cryptoService.encryptMultiple(
-      new Uint8Array(Buffer.from(plaintext, 'base64')),
+      plaintextBytes,
       recipientKeys,
-      {
-        publicKey: new Uint8Array(Buffer.from(senderPublicKey, 'base64')),
-        secretKey: new Uint8Array(Buffer.from(senderSecretKey, 'base64')),
-      },
+      { publicKey: senderPk, secretKey: senderSk },
     );
 
     const recipients: Record<string, any> = {};
@@ -187,7 +223,12 @@ router.post('/v1/crypto/validate', (req: Request, res: Response) => {
       return;
     }
 
-    const bytesArray = new Uint8Array(Buffer.from(bytes, 'base64'));
+    const bytesArray = decodeBase64(bytes);
+    if (!bytesArray) {
+      res.status(400).json({ success: false, error: 'bytes must be valid base64' });
+      return;
+    }
+
     const valid = cryptoService.validate(
       bytesArray,
       typeof minPlaintextSize === 'number' ? minPlaintextSize : undefined,
@@ -213,7 +254,11 @@ router.post('/v1/crypto/key-convert', (req: Request, res: Response) => {
     }
 
     if (publicKey) {
-      const keyBytes = new Uint8Array(Buffer.from(publicKey, 'base64'));
+      const keyBytes = decodeBase64(publicKey);
+      if (!keyBytes) {
+        res.status(400).json({ success: false, error: 'publicKey must be valid base64' });
+        return;
+      }
       const b58 = cryptoService.keyToBase58(keyBytes);
       res.json({
         success: true,

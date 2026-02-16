@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import * as ordersService from '../services/orders-service';
+import { decodeBase64 } from '../utils/validation';
 
 const router = Router();
 
@@ -22,13 +23,19 @@ router.post('/v1/orders/encrypt', (req: Request, res: Response) => {
       return;
     }
 
+    const solverPk = decodeBase64(solverPublicKey);
+    const userSk = decodeBase64(userSecretKey);
+    const userPk = decodeBase64(userPublicKey);
+
+    if (!solverPk || !userSk || !userPk) {
+      res.status(400).json({ success: false, error: 'solverPublicKey, userSecretKey, userPublicKey must be valid base64' });
+      return;
+    }
+
     const result = ordersService.encryptOrder(
       { minOutputAmount: String(minOutputAmount), slippageBps, deadline },
-      new Uint8Array(Buffer.from(solverPublicKey, 'base64')),
-      {
-        publicKey: new Uint8Array(Buffer.from(userPublicKey, 'base64')),
-        secretKey: new Uint8Array(Buffer.from(userSecretKey, 'base64')),
-      },
+      solverPk,
+      { publicKey: userPk, secretKey: userSk },
     );
 
     res.json({
@@ -63,13 +70,20 @@ router.post('/v1/orders/decrypt', (req: Request, res: Response) => {
       return;
     }
 
+    const bytesArr = decodeBase64(bytes);
+    const userPk = decodeBase64(userPublicKey);
+    const solverSk = decodeBase64(solverSecretKey);
+    const solverPk = decodeBase64(solverPublicKey);
+
+    if (!bytesArr || !userPk || !solverSk || !solverPk) {
+      res.status(400).json({ success: false, error: 'All fields must be valid base64' });
+      return;
+    }
+
     const payload = ordersService.decryptOrder(
-      new Uint8Array(Buffer.from(bytes, 'base64')),
-      new Uint8Array(Buffer.from(userPublicKey, 'base64')),
-      {
-        publicKey: new Uint8Array(Buffer.from(solverPublicKey, 'base64')),
-        secretKey: new Uint8Array(Buffer.from(solverSecretKey, 'base64')),
-      },
+      bytesArr,
+      userPk,
+      { publicKey: solverPk, secretKey: solverSk },
     );
 
     res.json({
@@ -90,7 +104,12 @@ router.post('/v1/orders/validate', (req: Request, res: Response) => {
       return;
     }
 
-    const bytesArray = new Uint8Array(Buffer.from(bytes, 'base64'));
+    const bytesArray = decodeBase64(bytes);
+    if (!bytesArray) {
+      res.status(400).json({ success: false, error: 'bytes must be valid base64' });
+      return;
+    }
+
     const valid = ordersService.validateOrder(bytesArray);
 
     res.json({ success: true, valid, byteLength: bytesArray.length });

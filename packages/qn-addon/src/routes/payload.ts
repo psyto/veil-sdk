@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import * as payloadService from '../services/payload-service';
+import { decodeBase64 } from '../utils/validation';
 
 const router = Router();
 
@@ -49,10 +50,13 @@ router.post('/v1/payload/deserialize', (req: Request, res: Response) => {
       return;
     }
 
-    const data = payloadService.deserialize(
-      new Uint8Array(Buffer.from(bytes, 'base64')),
-      schema,
-    );
+    const bytesArray = decodeBase64(bytes);
+    if (!bytesArray) {
+      res.status(400).json({ success: false, error: 'bytes must be valid base64' });
+      return;
+    }
+
+    const data = payloadService.deserialize(bytesArray, schema);
     res.json({ success: true, data });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

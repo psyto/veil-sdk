@@ -11,16 +11,26 @@ import compressionRouter from './routes/compression';
 import tiersRouter from './routes/tiers';
 import { errorHandler } from './middleware/error-handler';
 import { apiLimiter, provisionLimiter } from './middleware/rate-limit';
+import { requestId } from './middleware/request-id';
 
 export function createApp(): express.Application {
   const app = express();
 
-  app.use(cors());
+  // Request ID for log correlation
+  app.use(requestId);
+
+  app.use(cors({
+    origin: process.env.CORS_ORIGIN || false,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-INSTANCE-ID', 'X-QUICKNODE-ID', 'X-QN-CHAIN', 'X-QN-NETWORK', 'X-QN-TESTING', 'X-Request-Id'],
+    exposedHeaders: ['X-Request-Id'],
+  }));
   app.use(express.json({ limit: '1mb' }));
 
   // Request logging (skip in test environment)
   if (process.env.NODE_ENV !== 'test') {
-    app.use(morgan('short'));
+    morgan.token('request-id', (req: express.Request) => req.requestId || '-');
+    app.use(morgan(':request-id :method :url :status :response-time ms'));
   }
 
   // Root info endpoint
