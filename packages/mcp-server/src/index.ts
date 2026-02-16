@@ -17,11 +17,11 @@ import {
   splitSecret,
   combineShares,
   verifyShares,
-} from "@privacy-suite/crypto";
+} from "@veil/crypto";
 import {
   encryptOrderPayload,
   decryptOrderPayload,
-} from "@privacy-suite/orders";
+} from "@veil/orders";
 import BN from "bn.js";
 
 // ── helpers ──────────────────────────────────────────────────────────

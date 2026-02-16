@@ -6,7 +6,7 @@ import {
   deserializePayload,
   validateEncryptedData,
   SWAP_ORDER_SCHEMA,
-} from '@privacy-suite/crypto';
+} from '@veil/crypto';
 import BN from 'bn.js';
 
 /**
@@ -140,10 +140,10 @@ export function getEncryptionPublicKey(keypair: EncryptionKeypair): Uint8Array {
 }
 
 // Re-export commonly needed crypto types
-export type { EncryptionKeypair } from '@privacy-suite/crypto';
+export type { EncryptionKeypair } from '@veil/crypto';
 export {
   generateEncryptionKeypair,
   deriveEncryptionKeypair,
   encryptionKeyToBase58,
   base58ToEncryptionKey,
-} from '@privacy-suite/crypto';
+} from '@veil/crypto';

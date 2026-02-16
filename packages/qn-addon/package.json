@@ -1,5 +1,5 @@
 {
-  "name": "@privacy-suite/qn-addon",
+  "name": "@veil/qn-addon",
   "version": "0.1.0",
   "description": "QuickNode Marketplace REST Add-On wrapping Veil privacy primitives",
   "license": "MIT",
@@ -13,8 +13,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@privacy-suite/crypto": "file:../crypto",
-    "@privacy-suite/orders": "file:../orders",
+    "@veil/crypto": "file:../crypto",
+    "@veil/orders": "file:../orders",
     "@umbra/fairscore-middleware": "file:../fairscore-middleware",
     "better-sqlite3": "^11.0.0",
     "bn.js": "^5.2.1",

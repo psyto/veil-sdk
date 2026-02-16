@@ -1,5 +1,5 @@
 {
-  "name": "@privacy-suite/mcp-server",
+  "name": "@veil/mcp-server",
   "version": "0.1.0",
   "type": "module",
   "description": "MCP server exposing Veil privacy primitives (encryption, threshold secret sharing, order encryption) for AI agents",
@@ -26,8 +26,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
-    "@privacy-suite/crypto": "file:../crypto",
-    "@privacy-suite/orders": "file:../orders",
+    "@veil/crypto": "file:../crypto",
+    "@veil/orders": "file:../orders",
     "zod": "^3.24.0"
   },
   "devDependencies": {

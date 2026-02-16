@@ -1,5 +1,5 @@
 {
-  "name": "@privacy-suite/orders",
+  "name": "@veil/orders",
   "version": "0.1.0",
   "description": "Order encryption utilities for Privacy Suite — serialize, encrypt, and decrypt swap order payloads",
   "main": "dist/index.js",
@@ -20,7 +20,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@privacy-suite/crypto": "file:../crypto",
+    "@veil/crypto": "file:../crypto",
     "bn.js": "^5.2.1"
   },
   "devDependencies": {
@@ -32,6 +32,6 @@
     "typescript": "^5.0.0"
   },
   "peerDependencies": {
-    "@privacy-suite/crypto": "^0.2.0"
+    "@veil/crypto": "^0.2.0"
   }
 }

@@ -1,4 +1,4 @@
-import { splitSecret, combineShares, verifyShares, SecretShare } from '@privacy-suite/crypto';
+import { splitSecret, combineShares, verifyShares, SecretShare } from '@veil/crypto';
 
 export function split(secret: Uint8Array, threshold: number, totalShares: number): SecretShare[] {
   return splitSecret(secret, threshold, totalShares);

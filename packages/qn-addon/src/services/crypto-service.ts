@@ -9,7 +9,7 @@ import {
   validateEncryptedData,
   EncryptionKeypair,
   EncryptedData,
-} from '@privacy-suite/crypto';
+} from '@veil/crypto';
 
 export function generate(): { publicKey: Uint8Array; secretKey: Uint8Array } {
   return generateEncryptionKeypair();

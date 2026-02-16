@@ -6,11 +6,11 @@ Reusable SDK primitives for [Veil](https://github.com/psyto/veil) privacy-focuse
 
 | Package | Description |
 |---------|-------------|
-| [`@privacy-suite/crypto`](#privacy-suitecrypto) | Encryption, secret sharing, ZK compression, shielded transfers, Arcium MPC, Noir proofs |
-| [`@privacy-suite/orders`](#privacy-suiteorders) | Encrypt and decrypt swap order payloads for MEV protection |
+| [`@veil/crypto`](#veilcrypto) | Encryption, secret sharing, ZK compression, shielded transfers, Arcium MPC, Noir proofs |
+| [`@veil/orders`](#veilorders) | Encrypt and decrypt swap order payloads for MEV protection |
 | [`@umbra/fairscore-middleware`](#umbrafairscore-middleware) | Reputation-based fee tiers and access control via FairScale |
-| [`@privacy-suite/qn-addon`](#privacy-suiteqn-addon) | QuickNode Marketplace REST Add-On wrapping Veil privacy primitives |
-| [`@privacy-suite/mcp-server`](#privacy-suitemcp-server) | MCP server exposing Veil privacy primitives for AI agents |
+| [`@veil/qn-addon`](#veilqn-addon) | QuickNode Marketplace REST Add-On wrapping Veil privacy primitives |
+| [`@veil/mcp-server`](#veilmcp-server) | MCP server exposing Veil privacy primitives for AI agents |
 
 ## Getting Started
 
@@ -39,7 +39,7 @@ SOLANA_NETWORK=devnet                   # mainnet-beta | devnet | testnet
 
 ---
 
-## `@privacy-suite/crypto`
+## `@veil/crypto`
 
 Shared encryption and privacy utilities for the entire Privacy Suite.
 
@@ -57,7 +57,7 @@ import {
   encryptionKeyToBase58,
   base58ToEncryptionKey,
   validateEncryptedData,
-} from '@privacy-suite/crypto';
+} from '@veil/crypto';
 
 // Generate a random keypair
 const alice = generateEncryptionKeypair();
@@ -113,7 +113,7 @@ import {
   verifyShares,
   createThresholdEncryption,
   decryptWithThreshold,
-} from '@privacy-suite/crypto';
+} from '@veil/crypto';
 
 // Split a 32-byte secret into 5 shares, requiring 3 to reconstruct
 const secret = new Uint8Array(32); // your secret key
@@ -174,7 +174,7 @@ import {
   SWAP_ORDER_SCHEMA,
   RWA_ASSET_SCHEMA,
   RWA_ACCESS_GRANT_SCHEMA,
-} from '@privacy-suite/crypto';
+} from '@veil/crypto';
 
 // Use a built-in schema
 const size = calculateSchemaSize(SWAP_ORDER_SCHEMA);
@@ -225,7 +225,7 @@ import {
   compressTokenAccount,
   decompressTokenAccount,
   estimateCompressionSavings,
-} from '@privacy-suite/crypto';
+} from '@veil/crypto';
 
 // Set up the ZK-enabled RPC
 const rpc = createZkRpc({
@@ -267,7 +267,7 @@ import {
   isPrivacyCashAvailable,
   shieldTokens,
   unshieldTokens,
-} from '@privacy-suite/crypto';
+} from '@veil/crypto';
 
 // Check if Privacy Cash is available on the network
 const available = await isPrivacyCashAvailable(connection);
@@ -311,7 +311,7 @@ import {
   DarkPoolStateManager,
   createArciumClient,
   createDarkPoolManager,
-} from '@privacy-suite/crypto';
+} from '@veil/crypto';
 
 // Create an Arcium client
 const arcium = createArciumClient(connection, 'devnet', 'YOUR_API_KEY');
@@ -361,7 +361,7 @@ import {
   generateSwapProof,
   verifySwapProof,
   generateRangeProof,
-} from '@privacy-suite/crypto';
+} from '@veil/crypto';
 
 // Generate a swap validity proof
 const swapProof = await generateSwapProof({
@@ -400,7 +400,7 @@ import {
   createRpcFromEnv,
   createPublicRpc,
   getRpcAttribution,
-} from '@privacy-suite/crypto';
+} from '@veil/crypto';
 
 // From explicit config
 const { connection, zkRpc } = createRpcConnections({
@@ -427,9 +427,9 @@ const attribution = getRpcAttribution(helius); // "Powered by Helius"
 
 ---
 
-## `@privacy-suite/orders`
+## `@veil/orders`
 
-Order encryption utilities for Privacy Suite. Wraps `@privacy-suite/crypto` to provide a high-level API for encrypting swap orders that solvers can decrypt but MEV searchers cannot.
+Order encryption utilities for Privacy Suite. Wraps `@veil/crypto` to provide a high-level API for encrypting swap orders that solvers can decrypt but MEV searchers cannot.
 
 ### Quick Start
 
@@ -438,7 +438,7 @@ import {
   createEncryptedOrder,
   decryptOrderPayload,
   generateEncryptionKeypair,
-} from '@privacy-suite/orders';
+} from '@veil/orders';
 import BN from 'bn.js';
 
 // User side: encrypt an order
@@ -476,7 +476,7 @@ import {
   createEncryptedOrder,
   validateEncryptedPayload,
   getEncryptionPublicKey,
-} from '@privacy-suite/orders';
+} from '@veil/orders';
 
 // Serialize/deserialize without encryption (useful for testing)
 const payload = {
@@ -687,7 +687,7 @@ interface TierBenefits {
 
 ---
 
-## `@privacy-suite/qn-addon`
+## `@veil/qn-addon`
 
 QuickNode Marketplace REST Add-On that wraps all Veil privacy primitives as a JSON API. Install it on any QuickNode Solana endpoint to access NaCl encryption, Shamir secret sharing, order encryption, ZK compression estimation, and reputation tiers over HTTP.
 
@@ -957,7 +957,7 @@ All the same endpoints listed below are available via RapidAPI with your RapidAP
 
 ---
 
-## `@privacy-suite/mcp-server`
+## `@veil/mcp-server`
 
 [Model Context Protocol](https://modelcontextprotocol.io/) server that exposes Veil privacy primitives as MCP tools for AI agents (Claude, GPT, etc.). Runs over stdio transport.
 
@@ -1026,11 +1026,11 @@ Agent calls: encrypt { message: <base64("hello")>, recipientPublicKey: ..., send
 
 | Package | Key Dependencies |
 |---------|-----------------|
-| `@privacy-suite/crypto` | `@solana/web3.js`, `tweetnacl`, `@lightprotocol/stateless.js`, `@lightprotocol/compressed-token`, `privacycash`, `bn.js` |
-| `@privacy-suite/orders` | `@privacy-suite/crypto`, `bn.js` |
+| `@veil/crypto` | `@solana/web3.js`, `tweetnacl`, `@lightprotocol/stateless.js`, `@lightprotocol/compressed-token`, `privacycash`, `bn.js` |
+| `@veil/orders` | `@veil/crypto`, `bn.js` |
 | `@umbra/fairscore-middleware` | `@solana/web3.js`, `bs58` |
-| `@privacy-suite/qn-addon` | `@privacy-suite/crypto`, `@privacy-suite/orders`, `@umbra/fairscore-middleware`, `express`, `better-sqlite3`, `morgan`, `express-rate-limit`, `bn.js` |
-| `@privacy-suite/mcp-server` | `@modelcontextprotocol/sdk`, `@privacy-suite/crypto`, `@privacy-suite/orders`, `zod` |
+| `@veil/qn-addon` | `@veil/crypto`, `@veil/orders`, `@umbra/fairscore-middleware`, `express`, `better-sqlite3`, `morgan`, `express-rate-limit`, `bn.js` |
+| `@veil/mcp-server` | `@modelcontextprotocol/sdk`, `@veil/crypto`, `@veil/orders`, `zod` |
 
 ## License
 

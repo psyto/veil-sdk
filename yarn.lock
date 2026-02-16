@@ -731,23 +731,6 @@
   dependencies:
     "@noble/hashes" "^1.1.5"
 
-"@privacy-suite/crypto@file:packages/crypto":
-  version "0.2.0"
-  dependencies:
-    "@lightprotocol/compressed-token" "^0.17.0"
-    "@lightprotocol/stateless.js" "^0.17.0"
-    "@solana/web3.js" "^1.95.0"
-    bn.js "^5.2.1"
-    privacycash "^1.1.7"
-    tweetnacl "^1.0.3"
-    tweetnacl-util "^0.15.1"
-
-"@privacy-suite/orders@file:packages/orders":
-  version "0.1.0"
-  dependencies:
-    "@privacy-suite/crypto" "file:../../Library/Caches/Yarn/v6/npm-@privacy-suite-orders-0.1.0-7d8eb4bd-f7dc-48d3-a551-44193bc25484-1771241569938/node_modules/@privacy-suite/crypto"
-    bn.js "^5.2.1"
-
 "@sinclair/typebox@^0.27.8":
   version "0.27.10"
   resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.27.10.tgz#beefe675f1853f73676aecc915b2bd2ac98c4fc6"
@@ -1328,6 +1311,23 @@
     "@solana/web3.js" "^1.95.0"
     bs58 "^5.0.0"
     tweetnacl "^1.0.3"
+
+"@veil/crypto@file:packages/crypto":
+  version "0.2.0"
+  dependencies:
+    "@lightprotocol/compressed-token" "^0.17.0"
+    "@lightprotocol/stateless.js" "^0.17.0"
+    "@solana/web3.js" "^1.95.0"
+    bn.js "^5.2.1"
+    privacycash "^1.1.7"
+    tweetnacl "^1.0.3"
+    tweetnacl-util "^0.15.1"
+
+"@veil/orders@file:packages/orders":
+  version "0.1.0"
+  dependencies:
+    "@veil/crypto" "file:../../Library/Caches/Yarn/v6/npm-@veil-orders-0.1.0-59914460-6314-4e9e-ae99-08f89a128103-1771283397486/node_modules/@veil/crypto"
+    bn.js "^5.2.1"
 
 accepts@^2.0.0:
   version "2.0.0"

@@ -5,7 +5,7 @@ import {
   SWAP_ORDER_SCHEMA,
   RWA_ASSET_SCHEMA,
   RWA_ACCESS_GRANT_SCHEMA,
-} from '@privacy-suite/crypto';
+} from '@veil/crypto';
 
 const NAMED_SCHEMAS: Record<string, PayloadSchema> = {
   SWAP_ORDER: SWAP_ORDER_SCHEMA,

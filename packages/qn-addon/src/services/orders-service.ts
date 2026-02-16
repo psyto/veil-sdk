@@ -4,8 +4,8 @@ import {
   validateEncryptedPayload,
   OrderPayload,
   EncryptedPayload,
-} from '@privacy-suite/orders';
-import { EncryptionKeypair } from '@privacy-suite/crypto';
+} from '@veil/orders';
+import { EncryptionKeypair } from '@veil/crypto';
 import BN from 'bn.js';
 
 export function encryptOrder(

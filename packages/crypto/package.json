@@ -1,5 +1,5 @@
 {
-  "name": "@privacy-suite/crypto",
+  "name": "@veil/crypto",
   "version": "0.2.0",
   "description": "Shared encryption and privacy utilities for Solana Privacy Suite with ZK compression",
   "main": "dist/index.js",
