@@ -752,6 +752,22 @@ curl -X POST http://localhost:3030/v1/encrypt \
 curl -X POST http://localhost:3030/v1/decrypt \
   -H "Content-Type: application/json" \
   -d '{"bytes":"<base64>","senderPublicKey":"<base64>","recipientSecretKey":"<base64>","recipientPublicKey":"<base64>"}'
+
+# Encrypt for multiple recipients at once
+curl -X POST http://localhost:3030/v1/crypto/encrypt-multiple \
+  -H "Content-Type: application/json" \
+  -d '{"plaintext":"<base64>","recipientPublicKeys":["<base64>","<base64>"],"senderSecretKey":"<base64>","senderPublicKey":"<base64>"}'
+
+# Validate encrypted data structure
+curl -X POST http://localhost:3030/v1/crypto/validate \
+  -H "Content-Type: application/json" \
+  -d '{"bytes":"<base64>"}'
+
+# Convert key between base64 and base58
+curl -X POST http://localhost:3030/v1/crypto/key-convert \
+  -H "Content-Type: application/json" \
+  -d '{"publicKey":"<base64>"}'
+# or: -d '{"base58":"7xKX..."}'
 ```
 
 #### Threshold (Shamir Secret Sharing)
@@ -766,6 +782,11 @@ curl -X POST http://localhost:3030/v1/threshold/split \
 curl -X POST http://localhost:3030/v1/threshold/combine \
   -H "Content-Type: application/json" \
   -d '{"shares":[{"index":1,"value":"<base64>"},{"index":3,"value":"<base64>"},{"index":5,"value":"<base64>"}]}'
+
+# Verify shares are consistent with a given threshold
+curl -X POST http://localhost:3030/v1/threshold/verify \
+  -H "Content-Type: application/json" \
+  -d '{"shares":[{"index":1,"value":"<base64>"},{"index":2,"value":"<base64>"}],"threshold":2}'
 ```
 
 #### Orders (Encrypted Swap Orders)
@@ -780,6 +801,11 @@ curl -X POST http://localhost:3030/v1/orders/encrypt \
 curl -X POST http://localhost:3030/v1/orders/decrypt \
   -H "Content-Type: application/json" \
   -d '{"bytes":"<base64>","userPublicKey":"<base64>","solverSecretKey":"<base64>","solverPublicKey":"<base64>"}'
+
+# Validate encrypted order structure
+curl -X POST http://localhost:3030/v1/orders/validate \
+  -H "Content-Type: application/json" \
+  -d '{"bytes":"<base64>"}'
 ```
 
 #### Payload Serialization
@@ -865,7 +891,7 @@ docker run -p 3030:3030 \
 ```bash
 cd packages/qn-addon
 
-# Run all tests (33 tests across 14 suites)
+# Run all tests (51 tests across 15 suites)
 yarn test
 
 # End-to-end curl test (server must be running)
@@ -902,10 +928,15 @@ GitHub Actions runs `yarn build` and `yarn test` on every push and PR to `main`,
 | POST | `/v1/keypair/derive` | Derive keypair from seed | None |
 | POST | `/v1/encrypt` | NaCl box encrypt | None |
 | POST | `/v1/decrypt` | NaCl box decrypt | None |
+| POST | `/v1/crypto/encrypt-multiple` | Encrypt for multiple recipients | None |
+| POST | `/v1/crypto/validate` | Validate encrypted data structure | None |
+| POST | `/v1/crypto/key-convert` | Convert key between base64 and base58 | None |
 | POST | `/v1/threshold/split` | Shamir split secret | None |
 | POST | `/v1/threshold/combine` | Shamir combine shares | None |
+| POST | `/v1/threshold/verify` | Verify shares consistency | None |
 | POST | `/v1/orders/encrypt` | Encrypt swap order | None |
 | POST | `/v1/orders/decrypt` | Decrypt swap order | None |
+| POST | `/v1/orders/validate` | Validate encrypted order structure | None |
 | POST | `/v1/payload/serialize` | Serialize structured data | None |
 | POST | `/v1/payload/deserialize` | Deserialize structured data | None |
 | GET | `/v1/compression/estimate` | Estimate ZK compression savings | None |

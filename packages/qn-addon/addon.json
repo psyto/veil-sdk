@@ -22,9 +22,11 @@
       "price": "free",
       "features": [
         "NaCl box encryption/decryption",
-        "Keypair generation and derivation",
-        "Shamir secret sharing (split/combine)",
-        "Encrypted order payloads",
+        "Broadcast encryption for multiple recipients",
+        "Keypair generation, derivation, and base58 conversion",
+        "Encrypted data validation",
+        "Shamir secret sharing (split/combine/verify)",
+        "Encrypted order payloads with validation",
         "Payload serialization (SWAP_ORDER, RWA_ASSET, RWA_ACCESS_GRANT)",
         "ZK compression cost estimation",
         "Reputation tier lookup"
@@ -76,6 +78,27 @@
     },
     {
       "method": "POST",
+      "path": "/v1/crypto/encrypt-multiple",
+      "description": "Encrypt plaintext for multiple recipients at once (up to 50)",
+      "sample_url": "https://your-addon.example.com/v1/crypto/encrypt-multiple",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/crypto/validate",
+      "description": "Validate that bytes conform to the NaCl box encrypted data structure",
+      "sample_url": "https://your-addon.example.com/v1/crypto/validate",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/crypto/key-convert",
+      "description": "Convert encryption public key between base64/hex and Solana base58 format",
+      "sample_url": "https://your-addon.example.com/v1/crypto/key-convert",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
       "path": "/v1/threshold/split",
       "description": "Split a 32-byte secret into M-of-N Shamir shares",
       "sample_url": "https://your-addon.example.com/v1/threshold/split",
@@ -90,6 +113,13 @@
     },
     {
       "method": "POST",
+      "path": "/v1/threshold/verify",
+      "description": "Verify that Shamir shares are consistent with a given threshold",
+      "sample_url": "https://your-addon.example.com/v1/threshold/verify",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
       "path": "/v1/orders/encrypt",
       "description": "Encrypt a swap order payload for MEV-protected submission",
       "sample_url": "https://your-addon.example.com/v1/orders/encrypt",
@@ -100,6 +130,13 @@
       "path": "/v1/orders/decrypt",
       "description": "Decrypt an encrypted swap order payload",
       "sample_url": "https://your-addon.example.com/v1/orders/decrypt",
+      "plan": "starter"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/orders/validate",
+      "description": "Validate that bytes conform to an encrypted order payload structure",
+      "sample_url": "https://your-addon.example.com/v1/orders/validate",
       "plan": "starter"
     },
     {
