@@ -1,0 +1,997 @@
+openapi: 3.0.3
+info:
+  title: Veil Privacy Suite API
+  description: |
+    Privacy-first cryptography API for developers. Encrypt data, split secrets,
+    and protect trading orders — all via simple REST endpoints.
+
+    ## What You Can Do
+    - **Encrypt & Decrypt** — NaCl Box (Curve25519-XSalsa20-Poly1305) authenticated encryption
+    - **Secret Sharing** — Split secrets into M-of-N shares using Shamir's scheme; reconstruct with any M shares
+    - **Order Encryption** — Encrypt DEX swap order parameters to prevent front-running (MEV protection)
+    - **ZK Compression** — Estimate and apply on-chain data compression (Light Protocol / Solana)
+    - **Key Format Conversion** — Convert keys between base64, hex, and Solana base58 formats
+    - **Payload Serialization** — Encode/decode structured data to compact binary format
+    - **Reputation Tiers** — Look up tier-based fee discounts and feature access by score
+
+    ## Data Encoding
+    All binary data (keys, ciphertext, nonces) is encoded as **base64** in request and response bodies.
+    Key responses also include a hex-encoded variant for convenience.
+
+    ## Rate Limits
+    100 requests per minute per API key.
+  version: 0.1.0
+  contact:
+    name: Veil Privacy Suite
+    email: support@veil-privacy.dev
+  license:
+    name: MIT
+
+servers:
+  - url: https://veil-privacy-suite.p.rapidapi.com
+    description: RapidAPI Production
+
+tags:
+  - name: Crypto
+    description: NaCl box encryption, decryption, and key management
+  - name: Threshold
+    description: Shamir's Secret Sharing — split, combine, and verify secrets
+  - name: Orders
+    description: Encrypt and decrypt DEX swap orders for MEV protection
+  - name: Payload
+    description: Binary payload serialization with named schemas
+  - name: Compression
+    description: ZK compression via Light Protocol (Solana)
+  - name: Tiers
+    description: Reputation-based tier lookups (fee discounts, feature gating)
+  - name: Health
+    description: Service health and endpoint discovery
+
+paths:
+  /healthcheck:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Returns service health status. Use this to verify the API is reachable.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /:
+    get:
+      tags: [Health]
+      summary: Service info and endpoint catalog
+      description: Returns the service name, version, and a list of all available endpoints.
+      responses:
+        '200':
+          description: Service information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: "Veil Privacy Suite"
+                  version:
+                    type: string
+                    example: "0.1.0"
+                  endpoints:
+                    type: object
+
+  # === CRYPTO ENDPOINTS ===
+
+  /v1/keypair/generate:
+    post:
+      tags: [Crypto]
+      summary: Generate encryption keypair
+      description: |
+        Generates a new random X25519 encryption keypair.
+        Use the public key to let others encrypt messages for you,
+        and the secret key to decrypt them.
+      responses:
+        '200':
+          description: Generated keypair (public + secret) in base64 and hex
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeypairResponse'
+              example:
+                success: true
+                publicKey:
+                  base64: "dGhpcyBpcyBhIHRlc3QgcHVibGljIGtleQ=="
+                  hex: "7468697320697320612074657374207075626c6963206b6579"
+                secretKey:
+                  base64: "dGhpcyBpcyBhIHRlc3Qgc2VjcmV0IGtleQ=="
+                  hex: "746869732069732061207465737420736563726574206b6579"
+
+  /v1/keypair/derive:
+    post:
+      tags: [Crypto]
+      summary: Derive keypair from seed
+      description: |
+        Deterministically derives an X25519 keypair from a 32-byte seed.
+        The same seed always produces the same keypair — useful for
+        recovering keys from a master secret or HD derivation path.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [seed]
+              properties:
+                seed:
+                  type: string
+                  format: base64
+                  description: 32-byte seed encoded as base64
+      responses:
+        '200':
+          description: Derived keypair
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeypairResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/encrypt:
+    post:
+      tags: [Crypto]
+      summary: Encrypt data
+      description: |
+        Encrypts plaintext using NaCl Box (Curve25519-XSalsa20-Poly1305) authenticated encryption.
+        Requires both the recipient's public key and the sender's keypair.
+        The `bytes` field in the response contains the combined nonce + ciphertext,
+        ready for storage or transmission.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [plaintext, recipientPublicKey, senderSecretKey, senderPublicKey]
+              properties:
+                plaintext:
+                  type: string
+                  format: base64
+                  description: Data to encrypt, encoded as base64
+                recipientPublicKey:
+                  type: string
+                  format: base64
+                  description: Recipient's X25519 public key (base64)
+                senderSecretKey:
+                  type: string
+                  format: base64
+                  description: Sender's secret key (base64)
+                senderPublicKey:
+                  type: string
+                  format: base64
+                  description: Sender's public key (base64)
+      responses:
+        '200':
+          description: Encrypted data with nonce, ciphertext, and combined bytes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncryptedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/decrypt:
+    post:
+      tags: [Crypto]
+      summary: Decrypt data
+      description: |
+        Decrypts NaCl Box ciphertext back to plaintext.
+        Pass the combined nonce + ciphertext bytes (from the encrypt endpoint's `bytes` field),
+        along with the sender's public key and the recipient's keypair.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bytes, senderPublicKey, recipientSecretKey, recipientPublicKey]
+              properties:
+                bytes:
+                  type: string
+                  format: base64
+                  description: Combined nonce + ciphertext (base64)
+                senderPublicKey:
+                  type: string
+                  format: base64
+                recipientSecretKey:
+                  type: string
+                  format: base64
+                recipientPublicKey:
+                  type: string
+                  format: base64
+      responses:
+        '200':
+          description: Decrypted plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  plaintext:
+                    $ref: '#/components/schemas/EncodedBytes'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/crypto/encrypt-multiple:
+    post:
+      tags: [Crypto]
+      summary: Encrypt for multiple recipients
+      description: |
+        Encrypts the same plaintext for up to 50 recipients at once.
+        Each recipient gets their own encrypted copy with a unique nonce.
+        Useful for broadcast messaging, group notifications, or multi-party protocols.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [plaintext, recipientPublicKeys, senderSecretKey, senderPublicKey]
+              properties:
+                plaintext:
+                  type: string
+                  format: base64
+                recipientPublicKeys:
+                  type: array
+                  items:
+                    type: string
+                    format: base64
+                  minItems: 1
+                  maxItems: 50
+                  description: Array of recipient X25519 public keys (base64)
+                senderSecretKey:
+                  type: string
+                  format: base64
+                senderPublicKey:
+                  type: string
+                  format: base64
+      responses:
+        '200':
+          description: Encrypted data for each recipient, keyed by hex-encoded public key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  recipientCount:
+                    type: integer
+                  recipients:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/EncryptedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/crypto/validate:
+    post:
+      tags: [Crypto]
+      summary: Validate encrypted data structure
+      description: |
+        Validates that encrypted bytes have the correct NaCl Box structure
+        (nonce + ciphertext with valid sizes) without decrypting.
+        Use this as a pre-flight check before attempting decryption.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bytes]
+              properties:
+                bytes:
+                  type: string
+                  format: base64
+                  description: Encrypted bytes to validate
+                minPlaintextSize:
+                  type: integer
+                  default: 1
+                  description: Minimum expected plaintext size in bytes
+                maxPlaintextSize:
+                  type: integer
+                  default: 1024
+                  description: Maximum expected plaintext size in bytes
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  valid:
+                    type: boolean
+                    description: Whether the data has valid NaCl Box structure
+                  byteLength:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/crypto/key-convert:
+    post:
+      tags: [Crypto]
+      summary: Convert between key formats
+      description: |
+        Converts encryption public keys between raw bytes (base64/hex) and
+        Solana base58 format. Provide either `publicKey` (base64) or `base58`,
+        and the response includes both formats.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                publicKey:
+                  type: string
+                  format: base64
+                  description: Public key as base64 (converts to base58)
+                base58:
+                  type: string
+                  description: Public key as Solana base58 (converts to raw bytes)
+      responses:
+        '200':
+          description: Converted key in both formats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  base58:
+                    type: string
+                  publicKey:
+                    $ref: '#/components/schemas/EncodedBytes'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # === THRESHOLD ENDPOINTS ===
+
+  /v1/threshold/split:
+    post:
+      tags: [Threshold]
+      summary: Split secret into shares
+      description: |
+        Splits a 32-byte secret into N shares using Shamir's Secret Sharing.
+        Any M (threshold) of those shares can reconstruct the original secret.
+        Uses polynomial evaluation over a 256-bit prime field.
+
+        Example: split a key into 5 shares where any 3 can recover it (3-of-5).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [secret, threshold, totalShares]
+              properties:
+                secret:
+                  type: string
+                  format: base64
+                  description: 32-byte secret to split (base64)
+                threshold:
+                  type: integer
+                  minimum: 2
+                  description: Minimum shares needed to reconstruct (M)
+                totalShares:
+                  type: integer
+                  minimum: 2
+                  maximum: 255
+                  description: Total shares to generate (N, must be >= threshold)
+      responses:
+        '200':
+          description: Generated shares
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  shares:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SecretShare'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/threshold/combine:
+    post:
+      tags: [Threshold]
+      summary: Combine shares to reconstruct secret
+      description: |
+        Reconstructs the original secret from at least M (threshold) shares
+        using Lagrange interpolation. Provide any subset of shares that meets
+        the threshold requirement.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shares]
+              properties:
+                shares:
+                  type: array
+                  minItems: 2
+                  items:
+                    $ref: '#/components/schemas/SecretShare'
+      responses:
+        '200':
+          description: Reconstructed secret
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  secret:
+                    $ref: '#/components/schemas/EncodedBytes'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/threshold/verify:
+    post:
+      tags: [Threshold]
+      summary: Verify share consistency
+      description: |
+        Verifies that a set of shares are consistent by attempting reconstruction
+        with two different subsets of threshold shares. If both subsets produce the
+        same secret, the shares are valid and untampered.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shares, threshold]
+              properties:
+                shares:
+                  type: array
+                  minItems: 2
+                  items:
+                    $ref: '#/components/schemas/SecretShare'
+                threshold:
+                  type: integer
+                  minimum: 2
+                  description: Expected threshold for these shares
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  valid:
+                    type: boolean
+                    description: Whether shares are consistent
+                  sharesProvided:
+                    type: integer
+                  threshold:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # === ORDERS ENDPOINTS ===
+
+  /v1/orders/encrypt:
+    post:
+      tags: [Orders]
+      summary: Encrypt swap order
+      description: |
+        Encrypts a swap order payload so only the designated solver can read it.
+        This prevents front-running bots (MEV) from seeing your order parameters
+        (minimum output, slippage, deadline) before execution.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [minOutputAmount, slippageBps, deadline, solverPublicKey, userSecretKey, userPublicKey]
+              properties:
+                minOutputAmount:
+                  type: string
+                  description: Minimum output amount in smallest unit (e.g. lamports)
+                  example: "5000000"
+                slippageBps:
+                  type: integer
+                  description: Slippage tolerance in basis points (50 = 0.5%)
+                  example: 50
+                deadline:
+                  type: integer
+                  description: Unix timestamp when the order expires
+                  example: 1700000000
+                solverPublicKey:
+                  type: string
+                  format: base64
+                  description: Solver's X25519 public key (base64)
+                userSecretKey:
+                  type: string
+                  format: base64
+                  description: Your secret key (base64)
+                userPublicKey:
+                  type: string
+                  format: base64
+                  description: Your public key (base64)
+      responses:
+        '200':
+          description: Encrypted order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncryptedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/orders/decrypt:
+    post:
+      tags: [Orders]
+      summary: Decrypt swap order
+      description: |
+        Decrypts an encrypted swap order. Only the solver who holds the
+        matching secret key can decrypt and read the order parameters.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bytes, userPublicKey, solverSecretKey, solverPublicKey]
+              properties:
+                bytes:
+                  type: string
+                  format: base64
+                  description: Encrypted order bytes (base64)
+                userPublicKey:
+                  type: string
+                  format: base64
+                solverSecretKey:
+                  type: string
+                  format: base64
+                solverPublicKey:
+                  type: string
+                  format: base64
+      responses:
+        '200':
+          description: Decrypted order payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      minOutputAmount:
+                        type: string
+                      slippageBps:
+                        type: integer
+                      deadline:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/orders/validate:
+    post:
+      tags: [Orders]
+      summary: Validate encrypted order
+      description: |
+        Validates that encrypted bytes have the correct structure for a swap order
+        (right size range for NaCl Box + serialized order payload) without decrypting.
+        Useful for checking order integrity before submission.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bytes]
+              properties:
+                bytes:
+                  type: string
+                  format: base64
+                  description: Encrypted order bytes to validate
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  valid:
+                    type: boolean
+                  byteLength:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # === PAYLOAD ENDPOINTS ===
+
+  /v1/payload/serialize:
+    post:
+      tags: [Payload]
+      summary: Serialize data to binary
+      description: |
+        Encodes structured data into a compact fixed-size binary format using a named schema.
+        Supported schemas: SWAP_ORDER, RWA_ASSET, RWA_ACCESS_GRANT.
+        The output is suitable for on-chain storage or encryption.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data, schema]
+              properties:
+                data:
+                  type: object
+                  description: Key-value data to serialize (fields depend on chosen schema)
+                schema:
+                  type: string
+                  enum: [SWAP_ORDER, RWA_ASSET, RWA_ACCESS_GRANT]
+                  description: Named schema to use for encoding
+      responses:
+        '200':
+          description: Serialized bytes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  bytes:
+                    $ref: '#/components/schemas/EncodedBytes'
+                  size:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/payload/deserialize:
+    post:
+      tags: [Payload]
+      summary: Deserialize binary to data
+      description: |
+        Decodes binary bytes back to structured JSON data using the same named schema
+        that was used to serialize. Reverses the /serialize operation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bytes, schema]
+              properties:
+                bytes:
+                  type: string
+                  format: base64
+                schema:
+                  type: string
+                  enum: [SWAP_ORDER, RWA_ASSET, RWA_ACCESS_GRANT]
+      responses:
+        '200':
+          description: Deserialized data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # === COMPRESSION ENDPOINTS ===
+
+  /v1/compression/estimate:
+    get:
+      tags: [Compression]
+      summary: Estimate compression savings
+      description: |
+        Calculates the cost difference between storing data uncompressed vs.
+        ZK-compressed on Solana. Returns costs in lamports and savings percentage.
+      parameters:
+        - name: size
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: Data size in bytes
+      responses:
+        '200':
+          description: Cost estimation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  dataSize:
+                    type: integer
+                  uncompressedCost:
+                    type: string
+                    description: Cost in lamports without compression
+                  compressedCost:
+                    type: string
+                    description: Cost in lamports with ZK compression
+                  savings:
+                    type: string
+                    description: Savings in lamports
+                  savingsPercent:
+                    type: number
+                    description: Percentage saved
+              example:
+                success: true
+                dataSize: 1000
+                uncompressedCost: "6960"
+                compressedCost: "100"
+                savings: "6860"
+                savingsPercent: 98.56
+
+  /v1/compression/compress:
+    post:
+      tags: [Compression]
+      summary: Compress data with ZK proof
+      description: |
+        Compresses data using Light Protocol ZK compression for Solana.
+        Returns compressed data along with a zero-knowledge proof that
+        can be verified on-chain.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data, payerSecretKey]
+              properties:
+                data:
+                  type: string
+                  format: base64
+                  description: Data to compress (base64)
+                payerSecretKey:
+                  type: string
+                  format: base64
+                  description: Payer's secret key for transaction fees (base64)
+      responses:
+        '200':
+          description: Compressed data with ZK proof
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  compressedData:
+                    type: string
+                    format: base64
+                  proof:
+                    type: string
+                    format: base64
+                  publicInputs:
+                    type: string
+                    format: base64
+                  stateTreeRoot:
+                    type: string
+                    format: base64
+                  dataHash:
+                    type: string
+                    format: base64
+
+  /v1/compression/decompress:
+    post:
+      tags: [Compression]
+      summary: Decompress ZK-compressed data
+      description: |
+        Reconstructs original data from a compressed payload and its ZK proof.
+        Provide all fields returned by the /compress endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [compressedData, proof, publicInputs, stateTreeRoot, dataHash]
+              properties:
+                compressedData:
+                  type: string
+                  format: base64
+                proof:
+                  type: string
+                  format: base64
+                publicInputs:
+                  type: string
+                  format: base64
+                stateTreeRoot:
+                  type: string
+                  format: base64
+                dataHash:
+                  type: string
+                  format: base64
+      responses:
+        '200':
+          description: Decompressed data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: string
+                    format: base64
+
+  # === TIERS ENDPOINT ===
+
+  /v1/tiers/{score}:
+    get:
+      tags: [Tiers]
+      summary: Get tier benefits for score
+      description: |
+        Returns the reputation tier and associated benefits for a given score (0-100).
+        Higher scores unlock lower fees, better MEV protection, and more order types.
+
+        | Score | Tier | Fee | MEV Protection | Order Types |
+        |-------|------|-----|----------------|-------------|
+        | 0-19 | None | 50 bps | None | Market |
+        | 20-39 | Bronze | 30 bps | Basic | Market, Limit |
+        | 40-59 | Silver | 15 bps | Full | + TWAP |
+        | 60-79 | Gold | 8 bps | Priority | + Iceberg |
+        | 80-100 | Diamond | 5 bps | Priority | + Dark |
+      parameters:
+        - name: score
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100
+          description: Reputation score (0-100)
+      responses:
+        '200':
+          description: Tier benefits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TierBenefitsResponse'
+              example:
+                success: true
+                score: 65
+                tier: 3
+                tierName: Gold
+                feeBps: 8
+                mevProtection: Priority
+                orderTypes: [Market, Limit, Twap, Iceberg]
+                derivativesAccess: [Perpetuals, Variance]
+                maxOrderSize: null
+
+components:
+  schemas:
+    EncodedBytes:
+      type: object
+      properties:
+        base64:
+          type: string
+          format: base64
+        hex:
+          type: string
+
+    KeypairResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        publicKey:
+          $ref: '#/components/schemas/EncodedBytes'
+        secretKey:
+          $ref: '#/components/schemas/EncodedBytes'
+
+    EncryptedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        nonce:
+          $ref: '#/components/schemas/EncodedBytes'
+        ciphertext:
+          $ref: '#/components/schemas/EncodedBytes'
+        bytes:
+          $ref: '#/components/schemas/EncodedBytes'
+
+    SecretShare:
+      type: object
+      properties:
+        index:
+          type: integer
+          description: Share index (1-based)
+        value:
+          type: string
+          format: base64
+          description: Share value (base64)
+
+    TierBenefitsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        score:
+          type: integer
+        tier:
+          type: integer
+          description: "Tier level: 0=None, 1=Bronze, 2=Silver, 3=Gold, 4=Diamond"
+        tierName:
+          type: string
+        feeBps:
+          type: integer
+          description: Trading fee in basis points
+        mevProtection:
+          type: string
+          enum: [None, Basic, Full, Priority]
+        orderTypes:
+          type: array
+          items:
+            type: string
+            enum: [Market, Limit, Twap, Iceberg, Dark]
+        derivativesAccess:
+          type: array
+          items:
+            type: string
+            enum: [Perpetuals, Variance, Exotic]
+        maxOrderSize:
+          type: integer
+          nullable: true
+          description: Maximum order size in USD (null = unlimited)
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

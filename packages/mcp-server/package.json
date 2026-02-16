@@ -1,0 +1,36 @@
+{
+  "name": "@privacy-suite/mcp-server",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "MCP server exposing Veil privacy primitives (encryption, threshold secret sharing, order encryption) for AI agents",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "veil-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/psyto/veil-sdk.git",
+    "directory": "packages/mcp-server"
+  },
+  "author": "Privacy Suite Contributors",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@privacy-suite/crypto": "file:../crypto",
+    "@privacy-suite/orders": "file:../orders",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
