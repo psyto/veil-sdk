@@ -10,6 +10,7 @@ Reusable SDK primitives for [Veil](https://github.com/psyto/veil) privacy-focuse
 | [`@privacy-suite/orders`](#privacy-suiteorders) | Encrypt and decrypt swap order payloads for MEV protection |
 | [`@umbra/fairscore-middleware`](#umbrafairscore-middleware) | Reputation-based fee tiers and access control via FairScale |
 | [`@privacy-suite/qn-addon`](#privacy-suiteqn-addon) | QuickNode Marketplace REST Add-On wrapping Veil privacy primitives |
+| [`@privacy-suite/mcp-server`](#privacy-suitemcp-server) | MCP server exposing Veil privacy primitives for AI agents |
 
 ## Getting Started
 
@@ -891,7 +892,7 @@ docker run -p 3030:3030 \
 ```bash
 cd packages/qn-addon
 
-# Run all tests (51 tests across 15 suites)
+# Run all tests (125 tests across 21 suites)
 yarn test
 
 # End-to-end curl test (server must be running)
@@ -913,6 +914,16 @@ export PAYER_SECRET_KEY="<base64-encoded-solana-keypair>"
 ### CI
 
 GitHub Actions runs `yarn build` and `yarn test` on every push and PR to `main`, tested against Node 18 and 20.
+
+### RapidAPI
+
+The add-on is also available on RapidAPI as a hosted API. The OpenAPI specification is at `openapi-rapidapi.yaml`.
+
+```
+https://veil-privacy-suite.p.rapidapi.com
+```
+
+All the same endpoints listed below are available via RapidAPI with your RapidAPI API key.
 
 ### API Endpoint Summary
 
@@ -946,6 +957,71 @@ GitHub Actions runs `yarn build` and `yarn test` on every push and PR to `main`,
 
 ---
 
+## `@privacy-suite/mcp-server`
+
+[Model Context Protocol](https://modelcontextprotocol.io/) server that exposes Veil privacy primitives as MCP tools for AI agents (Claude, GPT, etc.). Runs over stdio transport.
+
+### Running
+
+```bash
+# Build
+cd packages/mcp-server
+yarn build
+
+# Run directly
+node dist/index.js
+
+# Or use the bin alias
+npx veil-mcp
+```
+
+### Claude Desktop Configuration
+
+Add to your Claude Desktop `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "veil-privacy-suite": {
+      "command": "node",
+      "args": ["/path/to/veil-sdk/packages/mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `generate_keypair` | Generate a random NaCl Box encryption keypair |
+| `derive_keypair` | Derive a deterministic keypair from a 32-byte seed |
+| `encrypt` | Encrypt a message using NaCl Box |
+| `decrypt` | Decrypt NaCl Box ciphertext |
+| `encrypt_multiple` | Encrypt for multiple recipients at once |
+| `validate_encrypted` | Validate encrypted data structure without decrypting |
+| `key_convert` | Convert keys between base64 and Solana base58 |
+| `shamir_split` | Split a 32-byte secret into M-of-N Shamir shares |
+| `shamir_combine` | Reconstruct a secret from Shamir shares |
+| `shamir_verify` | Verify that shares are consistent |
+| `encrypt_order` | Encrypt a DEX swap order payload (MEV protection) |
+| `decrypt_order` | Decrypt an encrypted swap order payload |
+
+All binary data (keys, ciphertext, nonces, secrets) is base64-encoded in both inputs and outputs.
+
+### Example
+
+```
+User: Generate an encryption keypair and encrypt "hello" for another keypair.
+
+Agent calls: generate_keypair → gets sender keys
+Agent calls: generate_keypair → gets recipient keys
+Agent calls: encrypt { message: <base64("hello")>, recipientPublicKey: ..., senderSecretKey: ..., senderPublicKey: ... }
+→ returns { nonce, ciphertext, bytes } (all base64)
+```
+
+---
+
 ## Dependencies
 
 | Package | Key Dependencies |
@@ -954,6 +1030,7 @@ GitHub Actions runs `yarn build` and `yarn test` on every push and PR to `main`,
 | `@privacy-suite/orders` | `@privacy-suite/crypto`, `bn.js` |
 | `@umbra/fairscore-middleware` | `@solana/web3.js`, `bs58` |
 | `@privacy-suite/qn-addon` | `@privacy-suite/crypto`, `@privacy-suite/orders`, `@umbra/fairscore-middleware`, `express`, `better-sqlite3`, `morgan`, `express-rate-limit`, `bn.js` |
+| `@privacy-suite/mcp-server` | `@modelcontextprotocol/sdk`, `@privacy-suite/crypto`, `@privacy-suite/orders`, `zod` |
 
 ## License
 
