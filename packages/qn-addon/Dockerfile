@@ -7,7 +7,6 @@ WORKDIR /app
 COPY package.json yarn.lock ./
 COPY packages/crypto/package.json packages/crypto/
 COPY packages/orders/package.json packages/orders/
-COPY packages/fairscore-middleware/package.json packages/fairscore-middleware/
 COPY packages/qn-addon/package.json packages/qn-addon/
 
 # Install all workspace dependencies
@@ -16,7 +15,6 @@ RUN yarn install --frozen-lockfile
 # Copy source code
 COPY packages/crypto/ packages/crypto/
 COPY packages/orders/ packages/orders/
-COPY packages/fairscore-middleware/ packages/fairscore-middleware/
 COPY packages/qn-addon/ packages/qn-addon/
 
 # Build all packages
@@ -30,7 +28,6 @@ WORKDIR /app
 COPY package.json yarn.lock ./
 COPY packages/crypto/package.json packages/crypto/
 COPY packages/orders/package.json packages/orders/
-COPY packages/fairscore-middleware/package.json packages/fairscore-middleware/
 COPY packages/qn-addon/package.json packages/qn-addon/
 
 RUN yarn install --frozen-lockfile --production
@@ -38,7 +35,6 @@ RUN yarn install --frozen-lockfile --production
 # Copy built output from all packages
 COPY --from=builder /app/packages/crypto/dist packages/crypto/dist
 COPY --from=builder /app/packages/orders/dist packages/orders/dist
-COPY --from=builder /app/packages/fairscore-middleware/dist packages/fairscore-middleware/dist
 COPY --from=builder /app/packages/qn-addon/dist packages/qn-addon/dist
 
 # Create non-root user and data directory
