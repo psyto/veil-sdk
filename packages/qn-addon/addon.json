@@ -2,7 +2,7 @@
   "name": "Veil Privacy Suite",
   "slug": "veil-privacy-suite",
   "version": "0.1.0",
-  "description": "Privacy primitives for Solana DeFi — NaCl encryption, Shamir secret sharing, encrypted order payloads, ZK compression, and reputation-based fee tiers. Built on the Veil SDK.",
+  "description": "Privacy primitives for Solana DeFi — NaCl encryption, Shamir secret sharing, encrypted order payloads, and ZK compression. Built on the Veil SDK.",
   "type": "rest",
   "author": "Veil",
   "repository": "https://github.com/psyto/veil-sdk",
@@ -18,7 +18,7 @@
     {
       "slug": "starter",
       "name": "Starter",
-      "description": "Stateless privacy primitives: encryption, secret sharing, payload serialization, tier lookup, compression estimation.",
+      "description": "Stateless privacy primitives: encryption, secret sharing, payload serialization, and compression estimation.",
       "price": "free",
       "features": [
         "NaCl box encryption/decryption",
@@ -28,8 +28,7 @@
         "Shamir secret sharing (split/combine/verify)",
         "Encrypted order payloads with validation",
         "Payload serialization (SWAP_ORDER, RWA_ASSET, RWA_ACCESS_GRANT)",
-        "ZK compression cost estimation",
-        "Reputation tier lookup"
+        "ZK compression cost estimation"
       ],
       "rate_limit": "100 requests/minute"
     },
@@ -158,13 +157,6 @@
       "path": "/v1/compression/estimate",
       "description": "Estimate ZK compression cost savings for a given data size",
       "sample_url": "https://your-addon.example.com/v1/compression/estimate?size=4096",
-      "plan": "starter"
-    },
-    {
-      "method": "GET",
-      "path": "/v1/tiers/:score",
-      "description": "Look up reputation tier benefits for a FairScore value (0-100)",
-      "sample_url": "https://your-addon.example.com/v1/tiers/72",
       "plan": "starter"
     },
     {

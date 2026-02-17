@@ -15,7 +15,6 @@
   "dependencies": {
     "@veil/crypto": "file:../crypto",
     "@veil/orders": "file:../orders",
-    "@umbra/fairscore-middleware": "file:../fairscore-middleware",
     "better-sqlite3": "^11.0.0",
     "bn.js": "^5.2.1",
     "cors": "^2.8.5",

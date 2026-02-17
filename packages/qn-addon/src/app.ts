@@ -8,7 +8,6 @@ import thresholdRouter from './routes/threshold';
 import ordersRouter from './routes/orders';
 import payloadRouter from './routes/payload';
 import compressionRouter from './routes/compression';
-import tiersRouter from './routes/tiers';
 import { errorHandler } from './middleware/error-handler';
 import { apiLimiter, provisionLimiter } from './middleware/rate-limit';
 import { requestId } from './middleware/request-id';
@@ -72,9 +71,6 @@ export function createApp(): express.Application {
           'POST /v1/compression/compress',
           'POST /v1/compression/decompress',
         ],
-        tiers: [
-          'GET /v1/tiers/:score',
-        ],
       },
     });
   });
@@ -92,8 +88,6 @@ export function createApp(): express.Application {
   app.use(ordersRouter);
   app.use(payloadRouter);
   app.use(compressionRouter);
-  app.use(tiersRouter);
-
   // Global error handler
   app.use(errorHandler);
 

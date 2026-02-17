@@ -1305,13 +1305,6 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@umbra/fairscore-middleware@file:packages/fairscore-middleware":
-  version "0.1.0"
-  dependencies:
-    "@solana/web3.js" "^1.95.0"
-    bs58 "^5.0.0"
-    tweetnacl "^1.0.3"
-
 "@veil/crypto@file:packages/crypto":
   version "0.2.0"
   dependencies:
@@ -1326,7 +1319,7 @@
 "@veil/orders@file:packages/orders":
   version "0.1.0"
   dependencies:
-    "@veil/crypto" "file:../../Library/Caches/Yarn/v6/npm-@veil-orders-0.1.0-59914460-6314-4e9e-ae99-08f89a128103-1771283397486/node_modules/@veil/crypto"
+    "@veil/crypto" "file:../../Library/Caches/Yarn/v6/npm-@veil-orders-0.1.0-900c2fe6-54ae-4e03-b563-645ccec86a6b-1771316880566/node_modules/@veil/crypto"
     bn.js "^5.2.1"
 
 accepts@^2.0.0:
@@ -1525,11 +1518,6 @@ base-x@^3.0.2:
   dependencies:
     safe-buffer "^5.0.1"
 
-base-x@^4.0.0:
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/base-x/-/base-x-4.0.1.tgz#817fb7b57143c501f649805cb247617ad016a885"
-  integrity sha512-uAZ8x6r6S3aUM9rbHGVOIsR15U/ZSc82b3ymnCPsT45Gk1DDvhDPdIgB5MrhirZWt+5K0EEPQH985kNqZgNPFw==
-
 base-x@^5.0.0:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/base-x/-/base-x-5.0.1.tgz#16bf35254be1df8aca15e36b7c1dda74b2aa6b03"
@@ -1702,13 +1690,6 @@ bs58@^4.0.0, bs58@^4.0.1:
   integrity sha512-Ok3Wdf5vOIlBrgCvTq96gBkJw+JUEzdBgyaza5HLtPm7yTHkjRy8+JzNyHF7BHa0bNWOQIp3m5YF0nnFcOIKLw==
   dependencies:
     base-x "^3.0.2"
-
-bs58@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/bs58/-/bs58-5.0.0.tgz#865575b4d13c09ea2a84622df6c8cbeb54ffc279"
-  integrity sha512-r+ihvQJvahgYT50JD05dyJNKlmmSlMoOGwn1lCcEzanPglg7TxYjioQUYehQ9mAR/+hOSd2jRc/Z2y5UxBymvQ==
-  dependencies:
-    base-x "^4.0.0"
 
 bs58@^6.0.0:
   version "6.0.0"

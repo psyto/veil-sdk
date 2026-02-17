@@ -8,7 +8,6 @@ Reusable SDK primitives for [Veil](https://github.com/psyto/veil) privacy-focuse
 |---------|-------------|
 | [`@veil/crypto`](#veilcrypto) | Encryption, secret sharing, ZK compression, shielded transfers, Arcium MPC, Noir proofs |
 | [`@veil/orders`](#veilorders) | Encrypt and decrypt swap order payloads for MEV protection |
-| [`@umbra/fairscore-middleware`](#umbrafairscore-middleware) | Reputation-based fee tiers and access control via FairScale |
 | [`@veil/qn-addon`](#veilqn-addon) | QuickNode Marketplace REST Add-On wrapping Veil privacy primitives |
 | [`@veil/mcp-server`](#veilmcp-server) | MCP server exposing Veil privacy primitives for AI agents |
 
@@ -519,177 +518,9 @@ interface EncryptedPayload {
 
 ---
 
-## `@umbra/fairscore-middleware`
-
-FairScale FairScore integration for Umbra. Provides reputation-based fee tiers, access control, and on-chain proof verification.
-
-### Tier System
-
-| FairScore | Tier | Fee | MEV Protection | Order Types | Derivatives | Max Order |
-|-----------|------|-----|----------------|-------------|-------------|-----------|
-| 0-19 | None | 0.50% | None | Market | None | $10k |
-| 20-39 | Bronze | 0.30% | Basic (delayed reveal) | + Limit | None | $50k |
-| 40-59 | Silver | 0.15% | Full (encryption) | + TWAP | Perpetuals | $250k |
-| 60-79 | Gold | 0.08% | Full + Priority | + Iceberg | + Variance | Unlimited |
-| 80-100 | Diamond | 0.05% | Priority routing | + Dark pool | + Exotic | Unlimited |
-
-### FairScoreClient
-
-```typescript
-import { FairScoreClient, createFairScoreClient } from '@umbra/fairscore-middleware';
-
-const client = createFairScoreClient({
-  apiKey: 'YOUR_FAIRSCALE_API_KEY',
-  baseUrl: 'https://api.fairscale.xyz',  // optional, this is the default
-  cacheTtlMs: 5 * 60 * 1000,             // optional, default 5 minutes
-});
-
-// Fetch a wallet's score
-const score = await client.getFairScore('7xKX...');
-console.log(score.score);       // 72
-console.log(score.tier);        // 3 (Gold)
-console.log(score.components);
-// {
-//   transaction_history: 15,
-//   defi_activity: 20,
-//   nft_holdings: 12,
-//   governance_participation: 10,
-//   account_age: 15,
-// }
-
-// Get tier benefits directly
-const benefits = await client.getTierBenefits('7xKX...');
-console.log(benefits.feeBps);        // 8
-console.log(benefits.tierName);      // "Gold"
-console.log(benefits.orderTypes);    // ["market", "limit", "twap", "iceberg"]
-console.log(benefits.maxOrderSize);  // null (unlimited)
-
-// Check minimum tier requirement
-const allowed = await client.meetsMinimumTier('7xKX...', 2); // Silver or above?
-
-// Get fee for a specific wallet
-const feeBps = await client.getFeeBps('7xKX...'); // 8
-
-// Batch fetch for multiple wallets
-const scores = await client.getBatchFairScores([wallet1, wallet2, wallet3]);
-
-// Cache management
-client.clearCache();
-client.clearCacheForWallet('7xKX...');
-```
-
-### TierCalculator
-
-Static utility for calculating tiers and benefits without API calls. Useful for on-chain logic or when you already have the score.
-
-```typescript
-import { TierCalculator, TierLevel } from '@umbra/fairscore-middleware';
-
-// Get tier from score
-const tier = TierCalculator.getTierFromScore(72); // TierLevel.Gold
-
-// Get full benefits
-const benefits = TierCalculator.getBenefitsFromScore(72);
-
-// Individual checks
-TierCalculator.getFeeBps(72);                              // 8
-TierCalculator.getMevProtection(72);                       // MevProtectionLevel.Priority
-TierCalculator.isOrderTypeAllowed(72, OrderType.Iceberg);  // true
-TierCalculator.isOrderTypeAllowed(72, OrderType.Dark);     // false (requires Diamond)
-TierCalculator.isDerivativeAllowed(72, DerivativeType.Perpetuals); // true
-TierCalculator.isOrderSizeAllowed(72, 500_000);            // true (Gold = unlimited)
-
-// Calculate fee amount
-const fee = TierCalculator.calculateFee(72, 1_000_000_000n); // 800_000n (0.08%)
-
-// Export tier config for on-chain storage
-const onChainTiers = TierCalculator.toOnChainFormat();
-// Returns TierDefinition[] with bitmask-encoded order types and derivatives
-```
-
-### Proof Verification
-
-Create and verify FairScore proofs for on-chain submission.
-
-```typescript
-import {
-  verifyFairScoreProof,
-  createProofMessage,
-} from '@umbra/fairscore-middleware';
-
-// Create a proof via the client
-const proof = await client.createProof('7xKX...');
-// proof.wallet, proof.score, proof.tier, proof.timestamp, proof.signature, proof.message
-
-// Verify the proof (checks age, format, score-tier consistency)
-const result = verifyFairScoreProof(proof);
-if (!result.valid) {
-  console.error(result.error);
-}
-
-// Custom max age (default is 10 minutes)
-const result2 = verifyFairScoreProof(proof, 5 * 60 * 1000); // 5 minutes
-
-// Prepare proof data for on-chain instruction
-import { prepareProofForOnChain } from '@umbra/fairscore-middleware';
-const onChainData = prepareProofForOnChain(proof);
-// { wallet: Uint8Array, score, tier, timestamp: bigint, signature: Uint8Array }
-```
-
-### Types Reference
-
-```typescript
-enum TierLevel { None = 0, Bronze = 1, Silver = 2, Gold = 3, Diamond = 4 }
-enum MevProtectionLevel { None = 0, Basic = 1, Full = 2, Priority = 3 }
-enum OrderType { Market = 'market', Limit = 'limit', Twap = 'twap', Iceberg = 'iceberg', Dark = 'dark' }
-enum DerivativeType { Perpetuals = 'perpetuals', Variance = 'variance', Exotic = 'exotic' }
-
-interface FairScoreConfig {
-  apiKey: string;
-  baseUrl?: string;      // default: https://api.fairscale.xyz
-  cacheTtlMs?: number;   // default: 300000 (5 min)
-}
-
-interface FairScoreResponse {
-  wallet: string;
-  score: number;          // 0-100
-  tier: number;           // 0-4
-  components: {
-    transaction_history: number;
-    defi_activity: number;
-    nft_holdings: number;
-    governance_participation: number;
-    account_age: number;
-  };
-  last_updated: string;
-  signature: string;
-}
-
-interface FairScoreProof {
-  wallet: string;
-  score: number;
-  tier: number;
-  timestamp: number;
-  signature: Uint8Array;
-  message: Uint8Array;     // "fairscore:{wallet}:{score}:{tier}:{timestamp}"
-}
-
-interface TierBenefits {
-  tier: TierLevel;
-  tierName: string;
-  feeBps: number;
-  mevProtection: MevProtectionLevel;
-  orderTypes: OrderType[];
-  derivativesAccess: DerivativeType[];
-  maxOrderSize: number | null;  // null = unlimited
-}
-```
-
----
-
 ## `@veil/qn-addon`
 
-QuickNode Marketplace REST Add-On that wraps all Veil privacy primitives as a JSON API. Install it on any QuickNode Solana endpoint to access NaCl encryption, Shamir secret sharing, order encryption, ZK compression estimation, and reputation tiers over HTTP.
+QuickNode Marketplace REST Add-On that wraps all Veil privacy primitives as a JSON API. Install it on any QuickNode Solana endpoint to access NaCl encryption, Shamir secret sharing, order encryption, and ZK compression estimation over HTTP.
 
 ### Running
 
@@ -844,14 +675,6 @@ curl -X POST http://localhost:3030/v1/compression/decompress \
   -d '{"compressedData":"<base64>","proof":"<base64>","publicInputs":"<base64>","stateTreeRoot":"<base64>","dataHash":"<base64>"}'
 ```
 
-#### Tiers (Reputation)
-
-```bash
-# Look up tier benefits for a FairScore value (0-100)
-curl http://localhost:3030/v1/tiers/72
-# {"success":true,"score":72,"tier":3,"tierName":"Gold","feeBps":8,"mevProtection":3,"orderTypes":["market","limit","twap","iceberg"],...}
-```
-
 ### Configuration
 
 Copy `.env.example` and edit:
@@ -953,7 +776,6 @@ All the same endpoints listed below are available via RapidAPI with your RapidAP
 | GET | `/v1/compression/estimate` | Estimate ZK compression savings | None |
 | POST | `/v1/compression/compress` | Compress data via Light Protocol | X-INSTANCE-ID |
 | POST | `/v1/compression/decompress` | Decompress data via Light Protocol | X-INSTANCE-ID |
-| GET | `/v1/tiers/:score` | Look up tier benefits | None |
 
 ---
 
@@ -1028,8 +850,7 @@ Agent calls: encrypt { message: <base64("hello")>, recipientPublicKey: ..., send
 |---------|-----------------|
 | `@veil/crypto` | `@solana/web3.js`, `tweetnacl`, `@lightprotocol/stateless.js`, `@lightprotocol/compressed-token`, `privacycash`, `bn.js` |
 | `@veil/orders` | `@veil/crypto`, `bn.js` |
-| `@umbra/fairscore-middleware` | `@solana/web3.js`, `bs58` |
-| `@veil/qn-addon` | `@veil/crypto`, `@veil/orders`, `@umbra/fairscore-middleware`, `express`, `better-sqlite3`, `morgan`, `express-rate-limit`, `bn.js` |
+| `@veil/qn-addon` | `@veil/crypto`, `@veil/orders`, `express`, `better-sqlite3`, `morgan`, `express-rate-limit`, `bn.js` |
 | `@veil/mcp-server` | `@modelcontextprotocol/sdk`, `@veil/crypto`, `@veil/orders`, `zod` |
 
 ## License

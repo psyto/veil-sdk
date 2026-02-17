@@ -12,7 +12,6 @@ info:
     - **ZK Compression** — Estimate and apply on-chain data compression (Light Protocol / Solana)
     - **Key Format Conversion** — Convert keys between base64, hex, and Solana base58 formats
     - **Payload Serialization** — Encode/decode structured data to compact binary format
-    - **Reputation Tiers** — Look up tier-based fee discounts and feature access by score
 
     ## Data Encoding
     All binary data (keys, ciphertext, nonces) is encoded as **base64** in request and response bodies.
@@ -42,8 +41,6 @@ tags:
     description: Binary payload serialization with named schemas
   - name: Compression
     description: ZK compression via Light Protocol (Solana)
-  - name: Tiers
-    description: Reputation-based tier lookups (fee discounts, feature gating)
   - name: Health
     description: Service health and endpoint discovery
 
@@ -858,50 +855,6 @@ paths:
                     type: string
                     format: base64
 
-  # === TIERS ENDPOINT ===
-
-  /v1/tiers/{score}:
-    get:
-      tags: [Tiers]
-      summary: Get tier benefits for score
-      description: |
-        Returns the reputation tier and associated benefits for a given score (0-100).
-        Higher scores unlock lower fees, better MEV protection, and more order types.
-
-        | Score | Tier | Fee | MEV Protection | Order Types |
-        |-------|------|-----|----------------|-------------|
-        | 0-19 | None | 50 bps | None | Market |
-        | 20-39 | Bronze | 30 bps | Basic | Market, Limit |
-        | 40-59 | Silver | 15 bps | Full | + TWAP |
-        | 60-79 | Gold | 8 bps | Priority | + Iceberg |
-        | 80-100 | Diamond | 5 bps | Priority | + Dark |
-      parameters:
-        - name: score
-          in: path
-          required: true
-          schema:
-            type: integer
-            minimum: 0
-            maximum: 100
-          description: Reputation score (0-100)
-      responses:
-        '200':
-          description: Tier benefits
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TierBenefitsResponse'
-              example:
-                success: true
-                score: 65
-                tier: 3
-                tierName: Gold
-                feeBps: 8
-                mevProtection: Priority
-                orderTypes: [Market, Limit, Twap, Iceberg]
-                derivativesAccess: [Perpetuals, Variance]
-                maxOrderSize: null
-
 components:
   schemas:
     EncodedBytes:
@@ -945,39 +898,6 @@ components:
           type: string
           format: base64
           description: Share value (base64)
-
-    TierBenefitsResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        score:
-          type: integer
-        tier:
-          type: integer
-          description: "Tier level: 0=None, 1=Bronze, 2=Silver, 3=Gold, 4=Diamond"
-        tierName:
-          type: string
-        feeBps:
-          type: integer
-          description: Trading fee in basis points
-        mevProtection:
-          type: string
-          enum: [None, Basic, Full, Priority]
-        orderTypes:
-          type: array
-          items:
-            type: string
-            enum: [Market, Limit, Twap, Iceberg, Dark]
-        derivativesAccess:
-          type: array
-          items:
-            type: string
-            enum: [Perpetuals, Variance, Exotic]
-        maxOrderSize:
-          type: integer
-          nullable: true
-          description: Maximum order size in USD (null = unlimited)
 
     ErrorResponse:
       type: object
